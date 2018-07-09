@@ -33,8 +33,7 @@ for run in range(1, 7):
     # Drop EEG channels (they are very noisy in this dataset)
     raw.pick_types(meg=True, eeg=False, eog=True, ecg=True, stim=True)
 
-    # Bandpass the data. Also make a 1Hz highpassed version for computing the
-    # ICA later on.
+    # Bandpass the data.
     raw_filt = raw.copy().filter(
         bandpass_fmin, bandpass_fmax, l_trans_bandwidth='auto',
         h_trans_bandwidth='auto', filter_length='auto', phase='zero',

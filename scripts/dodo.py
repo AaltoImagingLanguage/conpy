@@ -10,7 +10,7 @@ from config import (fname, subjects, conditions, freq_bands, bandpass_fmin,
                     bandpass_fmax)
 
 DOIT_CONFIG = dict(
-    default_tasks=['check', 'grand_average_power', 'connectivity_stats', 'figures'],
+    default_tasks=['grand_average_power', 'connectivity_stats', 'figures'],
     verbosity=2,
 )
 
@@ -28,11 +28,12 @@ def task_fetch_data():
     for subject in subjects:
         t1_fname = fname.t1(subject=subject)
         sss_fnames = [fname.sss(subject=subject, run=run) for run in range(1, 7)]
+        flash5_fname = fname.flash5(subject=subject)
 
         yield dict(
             name=subject,
             file_dep=['00_fetch_data.py'],
-            targets=[t1_fname] + sss_fnames,
+            targets=[t1_fname, flash5_fname] + sss_fnames,
             actions=['python 00_fetch_data.py %s' % subject],
         )
 
@@ -41,14 +42,15 @@ def task_anatomy():
     """Step 01: Run the FreeSurfer anatomical-MRI segmentation program."""
     for subject in subjects:
         t1_fname = fname.t1(subject=subject)
-        flash5_fname = fname.flash5(subject=subject)
         surf_fnames = [fname.surface(subject=subject, surf=surf)
                        for surf in ['inner_skull', 'outer_skull', 'outer_skin']]
+        bem_fname = fname.bem(subject=subject)
 
         yield dict(
             name=subject,
-            file_dep=surf_fnames + [t1_fname, flash5_fname, '01_anatomy.py'],
-            targets=[],
+            task_dep=['fetch_data'],
+            file_dep=[t1_fname, '01_anatomy.py'],
+            targets=surf_fnames + [bem_fname],
             actions=['python 01_anatomy.py %s' % subject],
         )
 
@@ -56,15 +58,14 @@ def task_anatomy():
 def task_filter():
     """Step 02: Bandpass-filter the data"""
     for subject in subjects:
-        sss_fnames = [fname.sss(subject=subject, run=run,
-                                fmin=bandpass_fmin, fmax=bandpass_fmax)
-                      for run in range(1, 7)]
+        sss_fnames = [fname.sss(subject=subject, run=run) for run in range(1, 7)]
         filt_fnames = [fname.filt(subject=subject, run=run,
                                   fmin=bandpass_fmin, fmax=bandpass_fmax)
                        for run in range(1, 7)]
 
         yield dict(
             name=subject,
+            task_dep=['anatomy'],
             file_dep=sss_fnames + ['02_filter.py'],
             targets=filt_fnames,
             actions=['python 02_filter.py %s' % subject],
@@ -81,6 +82,7 @@ def task_ica():
 
         yield dict(
             name=subject,
+            task_dep=['filter'],
             file_dep=filt_fnames + ['03_ica.py'],
             targets=[ica_fname],
             actions=['python 03_ica.py %s' % subject],
@@ -98,6 +100,7 @@ def task_epochs():
 
         yield dict(
             name=subject,
+            task_dep=['ica'],
             file_dep=filt_fnames + [ica_fname, '04_epochs.py'],
             targets=[epo_fname],
             actions=['python 04_epochs.py %s' % subject],
@@ -113,6 +116,7 @@ def task_csd():
 
         yield dict(
             name=subject,
+            task_dep=['epochs'],
             file_dep=[epo_fname, '05_csd.py'],
             targets=csd_fnames,
             actions=['python 05_csd.py %s' % subject],
@@ -123,6 +127,7 @@ def task_fsaverage_src():
     """Step 06: Create a source space for the fsaverage brain."""
     return dict(
         file_dep=['06_fsaverage_src.py'],
+        task_dep=['csd'],
         targets=[fname.fsaverage_src],
         actions=['python 06_fsaverage_src.py'],
     )
@@ -131,12 +136,14 @@ def task_fsaverage_src():
 def task_forward():
     """Step 07: Compute forward operators for each subject."""
     for subject in subjects:
+        epo_fname = fname.epo(subject=subject)
         fwd_fname = fname.fwd(subject=subject)
         src_fname = fname.src(subject=subject)
 
         yield dict(
             name=subject,
-            file_dep=[fname.fsaverage_src, '07_forward.py'],
+            task_dep=['fsaverage_src'],
+            file_dep=[fname.fsaverage_src, epo_fname, '07_forward.py'],
             targets=[fwd_fname, src_fname],
             actions=['python 07_forward.py %s' % subject],
         )
@@ -150,6 +157,7 @@ def task_select_vertices():
     pairs_fname = fname.pairs
 
     return dict(
+        task_dep=['forward'],
         file_dep=['08_select_vertices.py'] + fwd_fnames + src_fnames,
         targets=fwd_r_fnames + [pairs_fname],
         actions=['python 08_select_vertices.py']
@@ -170,6 +178,7 @@ def task_power():
 
         yield dict(
             name=subject,
+            task_dep=['select_vertices'],
             file_dep=[fwd_r_fname, '09_power.py'] + csd_fnames,
             targets=stc_fnames,
             actions=['python 09_power.py %s' % subject],
@@ -189,6 +198,7 @@ def task_connectivity():
 
         yield dict(
             name=subject,
+            task_dep=['power'],
             file_dep=[fwd_r_fname, fname.pairs, '10_connectivity.py'] + csd_fnames,
             targets=con_fnames,
             actions=['python 10_connectivity.py %s' % subject],
@@ -206,6 +216,7 @@ def task_grand_average_power():
     ga_filenames += [fname.ga_power_hemi(condition=cond, hemi='rh') for cond in conditions + ['contrast']]
 
     return dict(
+        task_dep=['connectivity'],
         file_dep=['11_grand_average_power.py'] + stc_fnames,
         targets=ga_filenames,
         actions=['python 11_grand_average_power.py']
@@ -218,11 +229,12 @@ def task_connectivity_stats():
     for subject in subjects:
         for cond in conditions:
             con_fnames.append(fname.con(subject=subject, condition=cond))
-    con_filenames = [fname.ga_con(condition=cond) for cond in conditions + ['contrast']]
+    ga_con_fnames = [fname.ga_con(condition=cond) for cond in conditions + ['contrast', 'parcelled']]
 
     return dict(
+        task_dep=['grand_average_power'],
         file_dep=['12_connectivity_stats.py'] + con_fnames,
-        targets=con_filenames,
+        targets=ga_con_fnames + [fname.stats],
         actions=['python 12_connectivity_stats.py']
     )
 
@@ -232,6 +244,7 @@ def task_figures():
     # Make figure 1: plot of the CSD matrices.
     yield dict(
         name='csd',
+        task_dep=['connectivity_stats'],
         file_dep=[fname.epo(subject=subjects[0]),
                   fname.csd(subject=subjects[0], condition='face')],
         targets=['../paper/figures/csd.pdf'],

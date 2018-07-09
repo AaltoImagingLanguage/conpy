@@ -32,9 +32,10 @@ elif 'triton' in host and user == 'vanvlm1':
     # The big computational cluster at Aalto University
     study_path = '/m/nbe/scratch/conpy'
     n_jobs = 1
-elif host == 'iris.org.aalto.fi' and user == 'vanvlm1':
-    # A server at Aalto University with a few more cores and more memory than
-    # my workstation
+elif ((host == 'iris.org.aalto.fi' or host == 'thor.org.aalto.fi')
+      and user == 'vanvlm1'):
+    # Some servers at Aalto University with a few more cores and more memory
+    # than my workstation
     study_path = '/m/nbe/scratch/conpy'
     n_jobs = 16
 else:
@@ -48,7 +49,8 @@ else:
 # These are all the relevant parameters for the analysis. You can experiment
 # with changing these.
 
-# High-pass setting used in the MNE-Python pipeline
+# Band-pass filter limits. Since we are performing ICA on the continuous data,
+# it is important that the lower bound is at least 1Hz.
 bandpass_fmin = 1  # Hz
 bandpass_fmax = 40  # Hz
 

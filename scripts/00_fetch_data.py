@@ -54,6 +54,10 @@ makedirs(fname.ds117_dir(subject=subject), exist_ok=True)
 print('Unzipping %s -> %s' % (fname.subject_tarball(subject=subject),
                               fname.ds117_dir(subject=subject)))
 with tarfile.open(fname.subject_tarball(subject=subject), 'r:gz') as tar:
-    tar.extractall(fname.ds117_dir(subject=subject))
+    if subject == 'sub019':
+        # This subject's tar.gz file does not give an ds117/sub019 subfolder structure
+        tar.extractall(fname.ds117_dir(subject=subject))
+    else:
+        tar.extractall(fname.study_path)
 
 makedirs(fname.subject_dir(subject=subject), exist_ok=True)

@@ -19,13 +19,13 @@ subject = args.subject
 print('Processing subject:', subject)
 
 # Construct a raw object that will load the highpass-filtered data.
-# For ICA, it is important that the data has been filtered above 1Hz.
 raw = mne.io.read_raw_fif(
     fname.filt(subject=subject, run=1, fmin=bandpass_fmin, fmax=bandpass_fmax),
     preload=False)
 for run in range(2, 7):
     raw.append(mne.io.read_raw_fif(
-        fname.filt(subject=subject, run=run, fmin=1, fmax=bandpass_fmax),
+        fname.filt(subject=subject, run=run,
+                   fmin=bandpass_fmin, fmax=bandpass_fmax),
         preload=False))
 
 # SSS reduces the data rank and the noise levels, so let's include
