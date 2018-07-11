@@ -59,7 +59,7 @@ contrast.save(fname.ga_con(condition='contrast'))
 # significant bundle.
 stats = conpy.cluster_permutation_test(
     cons['face'], cons['scrambled'],
-    cluster_threshold=5, src=fsaverage, n_permutations=1024, verbose=True,
+    cluster_threshold=5, src=fsaverage, n_permutations=1000, verbose=True,
     alpha=0.05, n_jobs=2, seed=10, return_details=True, max_spread=0.01,
 )
 connection_indices, bundles, bundle_ts, bundle_ps, H0 = stats
@@ -77,7 +77,7 @@ write_hdf5(fname.stats, dict(
 # Save the pruned grand average connection object
 con_clust.save(fname.ga_con(condition='pruned'))
 
-# Summarize the connectivity in aarcels
+# Summarize the connectivity in parcels
 labels = mne.read_labels_from_annot('fsaverage', 'aparc')
 del labels[-1]  # drop 'unknown-lh' label
 con_parc = con_clust.parcellate(labels, summary='degree',

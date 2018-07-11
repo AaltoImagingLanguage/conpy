@@ -24,10 +24,14 @@ brain.scale_data_colormap(0, 1, stc.data.max(), True)
 brain.add_annotation('aparc', borders=2)
 
 # Save some views
-mlab.view(40, 90, 450, [0, 0, 0])
+mlab.view(0, 90, 450, [0, 0, 0])
 mlab.savefig('../paper/figures/degree_rh.png', magnification=4)
-mlab.view(130, 70, 450, [0, 0, -10])
+mlab.view(180, 90, 450, [0, 0, 0])
 mlab.savefig('../paper/figures/degree_lh.png', magnification=4)
+mlab.view(180, 0, 450, [0, 10, 0])
+mlab.savefig('../paper/figures/degree_top.png', magnification=4)
+mlab.view(180, 180, 480, [0, 10, 0])
+mlab.savefig('../paper/figures/degree_bottom.png', magnification=4)
 
 # Plot the connectivity diagram
 fig, _ = con_parc.plot(title='Parcel-wise Connectivity', facecolor='white',

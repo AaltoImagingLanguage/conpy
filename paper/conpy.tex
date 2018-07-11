@@ -527,11 +527,9 @@ Accordingly, our final power maps are computed as ``(faces$-$scrambled pictures)
 
 % The following is subject to change as we play with the parameters
 The experimental paradigm used in the example dataset was designed to produce strong evoked potentials (EPs).
-Although DICS aims to capture oscillatory activity, the power maps are likely dominated by the EPs, especially in the lower frequency bands.
+Although DICS aims to capture oscillatory activity, the power maps are dominated by the EPs, especially in the lower frequency bands.
 In our case, all frequency bands highlight the primary visual cortex, where there is a strong EP following shortly after the presentation of a visual stimulus.
-The lower- and upper-beta band also show activity in the fusiform face area in the right hemisphere that is more active during face stimuli than scrambled images.
-The theta and alpha bands show some frontal power differences that are likely due to residual eye movement artifacts that were not completely removed in the ICA step.
-The low gamma frequency band only shows some very slight increases in activity, which is why we chose to perform the connectivity analysis for this frequency band, since large differences in power between conditions will severely bias an all-to-all connectivity estimate.
+The upper frequency bands only shows some very slight increases in activity, which is why we chose to perform the connectivity analysis for the low gamma band, since large differences in power between conditions will severely bias an all-to-all connectivity estimate.
 
 For better interpretation of these results, one can proceed with statistical analysis of the power maps in a similar fashion as done with source estimates of evoked data, as detailed in \textcite{Jas2017}.
 
@@ -672,10 +670,10 @@ The following example reads in the connectivity objects for all subjects and all
 In the connectivity analysis of the example data, we focus on a selection of connections that show the most reliable difference between the experimental conditions.
 The pruning of the all-to-all connectivity results is implemented in script \code{12_connectivity_stats.py}. 
 
-In our analysis of the example dataset, we applied an initial $t$-value threshold of 5 to the connections, retaining 849 out of the total of 4781057 connections.
-During the clustering step, connections with start and end points within \SI{1}{\centi\meter} were grouped, resulting in 144 bundles.
-The above thresholds were chosen such that there remained a small and manageable subset of the full all-to-all connectivity network, which shows the most robust differences between the processing of faces versus scrambled images.
-The permutation test revealed two bundles that show a significant difference in coherence between the processing of faces versus scrambled images ($p < 0.05$), containing a total of 240 connections.
+In our analysis of the example dataset, we applied an initial $t$-value threshold of 5 to the connections, retaining 1028 out of the total of 4781057 connections.
+During the clustering step, connections with start and end points within \SI{1}{\centi\meter} were grouped, resulting in 162 bundles.
+The above thresholds were chosen such that there remained a manageable subset of the full all-to-all connectivity network, which shows the most robust differences between the processing of faces versus scrambled images.
+The permutation test revealed two bundles that show a significant difference in coherence between the processing of faces versus scrambled images ($p < 0.05$), containing a total of 270 connections.
 
 
 \section{Visualization}\label{visualization}
@@ -719,7 +717,7 @@ The visualization of the pruned all-to-all connectivity of the example dataset i
 The intended interpretation of \autoref{fig:connectivity} is to first, using the degree map, identify the main areas where connectivity changes between faces versus scrambled images and then see which parcels overlap with these areas.
 Then, using the circular connectogram (\autoref{fig:connectivity}, right), we can determine which connections between these areas are influenced by the experimental manipulation.
 
-In our example dataset, the pruning of the all-to-all connectivity network resulted in a subnetwork that highlights communication between the right temporal pole, right prefrontal cortex and left superior frontal cortex (\autoref{fig:connectivity}, top-left).
+In our example dataset, the pruning of the all-to-all connectivity network resulted in a subnetwork that highlights a bundle of connections from the right middle temporal gyrus to the left superior frontal cortex and a bundle from the left motor cortex to the left oribitofrontal cortex (\autoref{fig:connectivity}, top-left).
 Since the obtained connectome is so sparse, we opted not to compensate for the degree bias in the degree map and circular connectogram and simply report the number of connections.
 
 The start and end points of the connection bundles do not always line up well with the parcels that are defined by the ``aparc'' brain atlas, which makes it less obvious in the circular connectogram that we are looking at two bundles of connections.
