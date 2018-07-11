@@ -59,7 +59,5 @@ for i, freq in enumerate(freq_bands):
         clim=dict(kind='value', pos_lims=[0.05, 0.06, 0.10]),
         figure=fig5,
     )
-    mlab.view(127, 90, 420, [0, 0, 0], figure=fig5)
-    mlab.savefig('../paper/figures/power_contrast_%s-%s-lh.png' % (freq[0], freq[1]), figure=fig5, magnification=4)
     mlab.view(-90, 110, 370, [0, 0, 0], figure=fig5)
     mlab.savefig('../paper/figures/power_contrast_%s-%s-occ.png' % (freq[0], freq[1]), figure=fig5, magnification=4)
