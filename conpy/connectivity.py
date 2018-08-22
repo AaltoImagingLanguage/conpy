@@ -438,6 +438,11 @@ class VertexConnectivity(_BaseConnectivity):
             vertices = self.vertices
             data = A.sum(axis=0).T + A.sum(axis=1)
 
+            # For undirected connectivity objects, all connections have been
+            # counted twice.
+            if not self.directed:
+                data = data / 2.
+
         else:
             raise ValueError('The summary parameter must be "degree", or '
                              '"sum".')
@@ -472,6 +477,7 @@ class VertexConnectivity(_BaseConnectivity):
             maximum value of the connections ('absmax'), or a function can be
             specified, which is called for each label with the following
             signature:
+
             >>> def summary(adjacency, vert_from, vert_to):
             ...     '''Summarize the connections within a label.
             ...
@@ -640,7 +646,7 @@ class VertexConnectivity(_BaseConnectivity):
 
         See Also
         --------
-        morph_source_spaces
+        mne.morph_source_spaces
         """
         if self.subject is None:
             raise ValueError('con.subject must be set')

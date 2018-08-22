@@ -409,17 +409,23 @@ def test_make_stc():
     with pytest.raises(ValueError):
         all_con_broken.make_stc()
 
-    stc = all_con.make_stc(summary='degree')
+    stc = all_con.make_stc(summary='degree', weight_by_degree=False)
     assert isinstance(stc, SourceEstimate)
-    assert_array_equal(stc.data,  np.ones((5, 1)))
+    assert_array_equal(stc.data.flatten(),  [1, 1, 2, 1, 1])
     assert_array_equal(all_con.vertices[0], stc.vertices[0])
     assert_array_equal(all_con.vertices[1], stc.vertices[1])
 
+    stc = all_con.make_stc(summary='degree', weight_by_degree=True)
+    assert_array_equal(stc.data.flatten(),  [1, 1, 1, 1, 1])
+
     stc = all_con.make_stc(summary='sum', weight_by_degree=False)
     assert isinstance(stc, SourceEstimate)
-    assert_array_equal(stc.data.flatten(),  np.array([2, 4, 8, 4, 6]))
+    assert_array_equal(stc.data.flatten(),  np.array([1, 2, 4, 2, 3]))
     assert_array_equal(all_con.vertices[0], stc.vertices[0])
     assert_array_equal(all_con.vertices[1], stc.vertices[1])
+
+    stc = all_con.make_stc(summary='sum', weight_by_degree=True)
+    assert_array_equal(stc.data.flatten(),  np.array([1, 2, 2, 2, 3]))
 
 
 def test_parcellate():
