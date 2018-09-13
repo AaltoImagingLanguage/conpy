@@ -1,5 +1,5 @@
 """
-Create a source space by for the fsaverae brain.
+Create a source space by for the fsaverage brain.
 
 Author: Marijn van Vliet <w.m.vanvliet@gmail.com>
 """

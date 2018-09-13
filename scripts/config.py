@@ -9,6 +9,8 @@ Configuration parameters for the study.
 import os
 from socket import getfqdn
 from fnames import FileNames
+import pickle
+from mne import Report
 
 
 ###############################################################################
@@ -188,7 +190,7 @@ fname.add('anatomy', '{subjects_dir}/{subject}')
 fname.add('flash_dir', '{anatomy}/mri/flash')
 fname.add('flash5', '{anatomy}/mri/flash/parameter_maps/flash5.mgz')
 fname.add('bem_dir', '{anatomy}/bem')
-fname.add('bem', '{bem_dir}/{subject}-5120-bem.fif')
+fname.add('bem', '{bem_dir}/{subject}-5120-bem-sol.fif')
 fname.add('surface', '{bem_dir}/flash/{surf}.surf')
 
 # Filenames for all the files that will be generated during the analysis
@@ -213,8 +215,38 @@ fname.add('fwd', '{subject_dir}/fsaverage_to_{subject}-meg-{sp}-fwd.fif')
 fname.add('fwd_r', '{subject_dir}/{subject}-restricted-meg-{sp}-fwd.fif')
 fname.add('pairs', '{meg_dir}/pairs.npy')
 
+# Filenames for MNE reports
+fname.add('reports_dir', '{study_path}/reports/')
+fname.add('report', '{reports_dir}/{subject}-report.pkl')
+fname.add('report_html', '{reports_dir}/{subject}-report.html')
+
 # For FreeSurfer and MNE-Python to find the MRI data
 os.environ["SUBJECTS_DIR"] = fname.subjects_dir
 
 # For BLAS to use the right amount of cores
 os.environ['OMP_NUM_THREADS'] = str(n_jobs)
+
+
+def get_report(subject):
+    """Get a Report object for a subject.
+
+    If the Report had been saved (pickle'd) before, load it. Otherwise,
+    construct a new one.
+    """
+    report_fname = fname.report(subject=subject)
+    if os.path.exists(report_fname):
+        with open(report_fname, 'rb') as f:
+            return pickle.load(f)
+    else:
+        return Report(subjects_dir=fname.subjects_dir, subject=subject,
+                      title='Analysis for %s' % subject)
+
+
+def save_report(report):
+    """Save a Report object using pickle and render it to HTML."""
+    report_fname = fname.report(subject=report.subject)
+    with open(report_fname, 'wb') as f:
+        pickle.dump(report, f)
+    report.save(fname.report_html(subject=report.subject), open_browser=False,
+                overwrite=True)
+

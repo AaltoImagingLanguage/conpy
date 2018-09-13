@@ -8,9 +8,9 @@ Conpy
 
 A Python library implementing the DICS beamformer for connectivity analysis and power mapping on the cortex. This is a Python reimplementation of the MATLAB code originally developed for [1]_. This repository also holds the code complementing our submittion to the Frontiers Research Topic: `From raw MEG/EEG to publication: how to perform MEG/EEG group analysis with free academic software <https://www.frontiersin.org/research-topics/5158>`_
 
-`Marijn van Vliet, Mia Liljeström, Susanna Aro, Riitta Salmelin and Jan Kujala. Analysis of functional connectivity and oscillatory power using DICS: from raw MEG data to group-level statistics in Python. bioRxiv 245530. 2018 <https://www.biorxiv.org/content/early/2018/01/16/245530>`_
+`Marijn van Vliet, Mia Liljeström, Susanna Aro, Riitta Salmelin and Jan Kujala. Analysis of functional connectivity and oscillatory power using DICS: from raw MEG data to group-level statistics in Python. 2018 <https://doi.org/10.3389/fnins.2018.00586>`_
 
-The code repository for this project can be found at: https://github.com/wmvanvliet/conpy
+The code repository for this project can be found at: https://github.com/aaltoimaginglanguage/conpy
 
 .. image:: connectivity.png
 
@@ -20,7 +20,7 @@ Conpy requires a Python (either 2.7 or 3.5+) installation with the following pac
 Numba is an optional dependency that, when installed, will speed up the connectivity estimation by about 100%.
 
 To install the conpy module, run:
-``pip install https://github.com/wmvanvliet/conpy/zipball/master``
+``pip install https://github.com/aaltoimaginglanguage/conpy/zipball/master``
 
 
 Documentation
@@ -71,6 +71,4 @@ References
 ----------
 .. [1] Gross, J., Kujala, J., Hämäläinen, M., Timmermann, L., Schnitzler, A., & Salmelin, R. (2001). Dynamic imaging of coherent sources: Studying neural interactions in the human brain. Proceedings of the National Academy of Sciences, 98(2), 694–699. https://doi.org/10.1073/pnas.98.2.694
 
-.. [2] van Vliet, M., Liljeström, M., Aro, S., Salmelin, R. & Kujala, J. (2018). Analysis of functional connectivity and oscillatory power using DICS: from raw MEG data to group-level statistics in Python. bioRxiv 245530. https://doi.org/10.1101/245530 
-
-.. [3] Jas, M., Larson, E., Engemann, D.-A. A., Leppäkangas, J., Taulu, S., Hämäläinen, M., … Gramfort, A. (2017). MEG/EEG group study with MNE: recommendations, quality assessments and best practices. bioRxiv. https://doi.org/10.1101/240044
+.. [2] van Vliet, M., Liljeström, M., Aro, S., Salmelin, R. & Kujala, J. (2018). Analysis of functional connectivity and oscillatory power using DICS: from raw MEG data to group-level statistics in Python. Frontiers in Neuroimaging. https://doi.org/10.3389/fnins.2018.00586

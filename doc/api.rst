@@ -10,8 +10,6 @@ API Documentation
 Forward models
 ==============
 
-Functions
-
 .. autosummary::
    :toctree: generated/
 
@@ -26,7 +24,7 @@ Functions
 Connectivity
 ============
 
-Classes
+Classes:
 
 .. autosummary::
    :toctree: generated/
@@ -36,7 +34,7 @@ Classes
    VertexConnectivity
 
 
-Functions
+Functions:
 
 .. autosummary::
    :toctree: generated/
@@ -50,8 +48,6 @@ Functions
 Statistics
 ==========
 
-Functions
-
 .. autosummary::
    :toctree: generated/
 
@@ -62,8 +58,6 @@ Functions
 
 Utilities
 =========
-
-Functions
 
 .. currentmodule:: conpy.utils
 

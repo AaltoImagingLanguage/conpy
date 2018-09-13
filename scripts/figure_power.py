@@ -12,7 +12,7 @@ stc_contrast = mne.read_source_estimate(fname.ga_power(condition='contrast'))
 fig1 = mlab.figure(size=(300, 300))
 fig2 = mlab.figure(size=(300, 300))
 brain1 = stc_face.plot(
-    subject='fsaverage',
+    subject='sub002',
     hemi='split',
     views='med',
     background='white',
@@ -44,20 +44,22 @@ mlab.savefig('../paper/figures/power_scrambled_lh.png', figure=fig3, magnificati
 mlab.savefig('../paper/figures/power_scrambled_rh.png', figure=fig4, magnification=4)
 
 # Show difference in power between the two experimental conditions, relative to the baseline power
-fig5 = mlab.figure(size=(300, 300))
+figs = []
 for i, freq in enumerate(freq_bands):
+    fig5 = mlab.figure(size=(300, 300))
     mlab.clf()
     #brain3 = stc_contrast.copy().crop(i, i).plot(
     brain3 = stc_contrast.plot(
-        subject='fsaverage',
+        subject='sub002',
         hemi='both',
         background='white',
         foreground='black',
         time_label='',
         colormap='mne',
         initial_time=i,
-        clim=dict(kind='value', pos_lims=[0.05, 0.06, 0.10]),
         figure=fig5,
     )
-    mlab.view(-90, 110, 370, [0, 0, 0], figure=fig5)
+    mlab.view(-90, 110, 420, [0, 0, 0], figure=fig5)
+    figs.append(fig5)
+
     mlab.savefig('../paper/figures/power_contrast_%s-%s-occ.png' % (freq[0], freq[1]), figure=fig5, magnification=4)

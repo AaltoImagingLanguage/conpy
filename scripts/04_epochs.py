@@ -6,7 +6,8 @@ import mne
 from mne.preprocessing import read_ica
 
 from config import (fname, events_id, epoch_tmin, epoch_tmax, baseline,
-                    bandpass_fmin, bandpass_fmax, reject)
+                    bandpass_fmin, bandpass_fmax, reject, get_report,
+                    save_report)
 
 # Be verbose
 mne.set_log_level('INFO')
@@ -41,10 +42,18 @@ print('  Using ICA')
 ica = read_ica(fname.ica(subject=subject))
 
 # Make epochs. Because the original 1000Hz sampling rate is a bit excessive
-# for what we're going for, we only read every 5rd sample. This gives us a
+# for what we're going for, we only read every 5th sample. This gives us a
 # sampling rate of ~200Hz.
 epochs = mne.Epochs(raw, events, events_id, epoch_tmin, epoch_tmax,
                     baseline=baseline, decim=5, preload=True)
+
+# Save evoked plot to the report
+report = get_report(subject)
+report.add_figs_to_section(
+    [epochs.average().plot(show=False)],
+    ['Evoked without ICA'],
+    section='Sensor-level'
+)
 
 # Apply ICA to the epochs, dropping components that correlate with ECG and EOG
 ica.apply(epochs)
@@ -56,3 +65,11 @@ print('  Dropped %0.1f%% of epochs' % (epochs.drop_log_stats(),))
 
 print('  Writing to disk')
 epochs.save(fname.epo(subject=subject))
+
+# Save evoked plot to report
+report.add_figs_to_section(
+    [epochs.average().plot(show=False)],
+    ['Evoked with ICA'],
+    section='Sensor-level'
+)
+save_report(report)

@@ -61,3 +61,4 @@ with tarfile.open(fname.subject_tarball(subject=subject), 'r:gz') as tar:
         tar.extractall(fname.study_path)
 
 makedirs(fname.subject_dir(subject=subject), exist_ok=True)
+makedirs(fname.reports_dir(subject=subject), exist_ok=True)

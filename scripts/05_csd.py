@@ -9,7 +9,8 @@ import numpy as np
 import mne
 from mne.time_frequency import csd_morlet
 
-from config import fname, n_jobs, csd_tmin, csd_tmax, freq_bands, conditions
+from config import (fname, n_jobs, csd_tmin, csd_tmax, freq_bands, conditions,
+                    get_report, save_report)
 
 # Be verbose
 mne.set_log_level('INFO')
@@ -24,6 +25,8 @@ print('Processing subject:', subject)
 # Read the epochs
 print('Reading epochs...')
 epochs = mne.read_epochs(fname.epo(subject=subject))
+
+report = get_report(subject)
 
 # Suppress warning about wavelet length.
 warnings.simplefilter('ignore')
@@ -45,6 +48,9 @@ for condition in conditions:
 
     # Save the CSD matrices
     csd.save(fname.csd(condition=condition, subject=subject))
+    report.add_figs_to_section(csd.plot(show=False),
+                               ['CSD for %s' % condition],
+                               section='Sensor-level')
 
 # Also compute the CSD for the baseline period (use all epochs for this,
 # regardless of condition). This way, we can compare the change in power caused
@@ -53,3 +59,7 @@ epochs = epochs.apply_baseline((-0.2, 0))  # Make sure data is zero-mean
 csd_baseline = csd_morlet(epochs, frequencies=frequencies, tmin=-0.2, tmax=0,
                           decim=20, n_jobs=n_jobs, verbose=True)
 csd_baseline.save(fname.csd(condition='baseline', subject=subject))
+report.add_figs_to_section(csd_baseline.plot(show=False), ['CSD for baseline'],
+                           section='Sensor-level')
+
+save_report(report)

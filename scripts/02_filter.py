@@ -4,7 +4,8 @@ Perform bandpass filtering.
 import argparse
 import mne
 
-from config import fname, bandpass_fmin, bandpass_fmax, n_jobs
+from config import (fname, bandpass_fmin, bandpass_fmax, n_jobs, get_report,
+                    save_report)
 
 # Be verbose
 mne.set_log_level('INFO')
@@ -15,6 +16,10 @@ parser.add_argument('subject', metavar='sub###', help='The subject to process')
 args = parser.parse_args()
 subject = args.subject
 print('Processing subject:', subject)
+
+# Keep track of PSD plots before and after filtering
+figs_before = []
+figs_after = []
 
 for run in range(1, 7):
     # Load the SSS transformed data.
@@ -50,3 +55,23 @@ for run in range(1, 7):
     f = fname.filt(subject=subject, run=run,
                    fmin=bandpass_fmin, fmax=bandpass_fmax)
     raw_filt.save(f, overwrite=True)
+
+    # Make a plot of the PSD before and after filtering
+    figs_before.append(raw.plot_psd(show=False))
+    figs_after.append(raw_filt.plot_psd(show=False))
+
+# Append PDF plots to report
+report = get_report(subject)
+report.add_slider_to_section(
+    figs_before,
+    ['PSD before filtering: run %d' % i for i in range(1, 7)],
+    title='PSD before filtering',
+    section='Sensor-level'
+)
+report.add_slider_to_section(
+    figs_after,
+    ['PSD after filtering: run %d' % i for i in range(1, 7)],
+    title='PSD after filtering',
+    section='Sensor-level'
+)
+save_report(report)

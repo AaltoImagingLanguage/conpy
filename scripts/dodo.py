@@ -11,7 +11,7 @@ from config import (fname, subjects, conditions, freq_bands, bandpass_fmin,
 
 DOIT_CONFIG = dict(
     default_tasks=['grand_average_power', 'connectivity_stats', 'figures'],
-    verbosity=2,
+    verbosity=2, sort='alphabetical',
 )
 
 

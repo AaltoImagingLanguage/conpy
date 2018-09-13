@@ -6,7 +6,7 @@ import numpy as np
 import mne
 from mne.preprocessing import ICA, create_ecg_epochs, create_eog_epochs
 from config import (fname, bandpass_fmin, bandpass_fmax, n_ecg_components,
-                    n_eog_components)
+                    n_eog_components, get_report, save_report)
 
 # Be verbose
 mne.set_log_level('INFO')
@@ -77,3 +77,20 @@ print('    Found %d EOG indices' % (len(eog_inds),))
 
 # Save the ICA decomposition
 ica.save(fname.ica(subject=subject))
+
+# Save plots of the ICA components to the report
+figs = ica.plot_components(show=False)
+report = get_report(subject)
+report.add_slider_to_section(
+    figs,
+    ['ICA components %d' % i for i in range(len(figs))],
+    title='ICA components',
+    section='Sensor-level'
+)
+report.add_figs_to_section(
+    [ica.plot_scores(ecg_scores, show=False),
+     ica.plot_scores(eog_scores, show=False)],
+    ['Component correlation with ECG', 'Component correlation with EOG'],
+    section='Sensor-level'
+)
+save_report(report)

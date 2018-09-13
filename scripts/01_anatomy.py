@@ -13,7 +13,7 @@ import shutil
 import mne
 import nibabel
 
-from config import fname, subjects
+from config import fname, subjects, get_report, save_report, n_jobs
 
 # Handle command line arguments
 parser = argparse.ArgumentParser(description=__doc__)
@@ -70,3 +70,9 @@ mne.bem.convert_flash_mris(subject, convert=False,
 
 print('Making BEM surfaces')
 mne.bem.make_flash_bem(subject, subjects_dir=fname.subjects_dir, show=False)
+
+# Save BEM figure to report
+report = get_report(subject)
+report.add_bem_to_section(subject, 'BEM surfaces', section='Anatomy',
+                          n_jobs=n_jobs)
+save_report(report)
