@@ -24,6 +24,8 @@ Forward models
 Connectivity
 ============
 
+.. currentmodule:: conpy.connectivity
+
 Classes:
 
 .. autosummary::
@@ -47,6 +49,8 @@ Functions:
 
 Statistics
 ==========
+
+.. currentmodule:: conpy.stats
 
 .. autosummary::
    :toctree: generated/
