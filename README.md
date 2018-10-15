@@ -1,6 +1,6 @@
 Conpy
 -----
-A Python library implementing the DICS beamformer for connectivity analysis and power mapping on the cortex. This is a Python reimplementation of the MATLAB code originally developed for [1]. This repository also holds the code complementing our submittion to the Frontiers Research Topic: [From raw MEG/EEG to publication: how to perform MEG/EEG group analysis with free academic software](https://www.frontiersin.org/research-topics/5158)
+A Python library implementing the DICS beamformer for connectivity analysis and power mapping on the cortex. This is a Python reimplementation of the MATLAB code originally developed for [1]. This repository also holds the code complementing our submission to the Frontiers Research Topic: [From raw MEG/EEG to publication: how to perform MEG/EEG group analysis with free academic software](https://www.frontiersin.org/research-topics/5158)
 
 [Marijn van Vliet, Mia Liljeström, Susanna Aro, Riitta Salmelin and Jan Kujala (2018). Analysis of functional connectivity and oscillatory power using DICS: from raw MEG data to group-level statistics in Python](https://doi.org/10.3389/fnins.2018.00586)
 
