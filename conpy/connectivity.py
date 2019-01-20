@@ -1135,7 +1135,7 @@ def dics_connectivity(vertex_pairs, fwd, data_csd, reg=0.05, n_angles=50,
     G /= np.linalg.norm(G, axis=0)
 
     Cm = data_csd.get_data()
-    Cm_inv, alpha = _reg_pinv(Cm, reg)
+    Cm_inv, alpha, _ = _reg_pinv(Cm, reg)
     del Cm
 
     W = np.dot(G.T, Cm_inv)
