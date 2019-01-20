@@ -2,6 +2,7 @@
 
 Author: Marijn van Vliet <w.m.vanvliet@gmail.com>
 """
+import operator
 import numpy as np
 from mne.source_space import (_ensure_src, _get_morph_src_reordering,
                               _ensure_src_subject, SourceSpaces)
@@ -73,7 +74,7 @@ def _find_indices_1d(haystack, needles, check_needles=True):
 
 
 def get_morph_src_mapping(src_from, src_to, subject_from=None,
-                           subject_to=None, subjects_dir=None, indices=False):
+                          subject_to=None, subjects_dir=None, indices=False):
     """Get a mapping between an original source space and its morphed version.
 
     It is assumed that the number of vertices and their positions match between
@@ -164,3 +165,131 @@ def get_morph_src_mapping(src_from, src_to, subject_from=None,
                    dict(zip(to_vert_rh, from_vert_rh))]
 
     return from_to, to_from
+
+
+def _estimate_rank_from_s(s, tol='auto'):
+    """Estimate the rank of a matrix from its singular values.
+
+    Parameters
+    ----------
+    s : list of float
+        The singular values of the matrix.
+    tol : float | 'auto'
+        Tolerance for singular values to consider non-zero in calculating the
+        rank. Can be 'auto' to use the same thresholding as
+        ``scipy.linalg.orth``.
+
+    Returns
+    -------
+    rank : int
+        The estimated rank.
+    """
+    if isinstance(tol, str):
+        if tol != 'auto':
+            raise ValueError('tol must be "auto" or float')
+        eps = np.finfo(float).eps
+        tol = len(s) * np.amax(s) * eps
+
+    tol = float(tol)
+    rank = np.sum(s > tol)
+    return rank
+
+
+def reg_pinv(x, reg=0, rank='full', rcond=1e-15):
+    """Compute a regularized pseudoinverse of a square matrix.
+
+    Regularization is performed by adding a constant value to each diagonal
+    element of the matrix before inversion. This is known as "diagonal
+    loading". The loading factor is computed as ``reg * np.trace(x) / len(x)``.
+
+    The pseudo-inverse is computed through SVD decomposition and inverting the
+    singular values. When the matrix is rank deficient, some singular values
+    will be close to zero and will not be used during the inversion. The number
+    of singular values to use can either be manually specified or automatically
+    estimated.
+
+    Parameters
+    ----------
+    x : ndarray, shape (n, n)
+        Square matrix to invert.
+    reg : float
+        Regularization parameter. Defaults to 0.
+    rank : int | None | 'full'
+        This controls the effective rank of the covariance matrix when
+        computing the inverse. The rank can be set explicitly by specifying an
+        integer value. If ``None``, the rank will be automatically estimated.
+        Since applying regularization will always make the covariance matrix
+        full rank, the rank is estimated before regularization in this case. If
+        'full', the rank will be estimated after regularization and hence
+        will mean using the full rank, unless ``reg=0`` is used.
+        Defaults to 'full'.
+    rcond : float | 'auto'
+        Cutoff for detecting small singular values when attempting to estimate
+        the rank of the matrix (``rank='auto'``). Singular values smaller than
+        the cutoff are set to zero. When set to 'auto', a cutoff based on
+        floating point precision will be used. Defaults to 1e-15.
+
+    Returns
+    -------
+    x_inv : ndarray, shape (n, n)
+        The inverted matrix.
+    loading_factor : float
+        Value added to the diagonal of the matrix during regularization.
+    rank : int
+        If ``rank`` was set to an integer value, this value is returned,
+        else the estimated rank of the matrix, before regularization, is
+        returned.
+    """
+    if rank is not None and rank != 'full':
+        rank = int(operator.index(rank))
+    if x.ndim != 2 or x.shape[0] != x.shape[1]:
+        raise ValueError('Input matrix must be square.')
+    if not np.allclose(x, x.conj().T):
+        raise ValueError('Input matrix must be Hermitian (symmetric)')
+
+    # Decompose the matrix
+    U, s, V = np.linalg.svd(x)
+
+    # Estimate the rank before regularization
+    tol = 'auto' if rcond == 'auto' else rcond * s.max()
+    rank_before = _estimate_rank_from_s(s, tol)
+
+    # Decompose the matrix again after regularization
+    loading_factor = reg * np.mean(s)
+    U, s, V = np.linalg.svd(x + loading_factor * np.eye(len(x)))
+
+    # Estimate the rank after regularization
+    tol = 'auto' if rcond == 'auto' else rcond * s.max()
+    rank_after = _estimate_rank_from_s(s, tol)
+
+    # Warn the user if both all parameters were kept at their defaults and the
+    # matrix is rank deficient.
+    if rank_after < len(x) and reg == 0 and rank == 'full' and rcond == 1e-15:
+        warn('Covariance matrix is rank-deficient and no regularization is '
+             'done.')
+    elif isinstance(rank, int) and rank > len(x):
+        raise ValueError('Invalid value for the rank parameter (%d) given '
+                         'the shape of the input matrix (%d x %d).' %
+                         (rank, x.shape[0], x.shape[1]))
+
+    # Pick the requested number of singular values
+    if rank is None:
+        sel_s = s[:rank_before]
+    elif rank == 'full':
+        sel_s = s[:rank_after]
+    else:
+        sel_s = s[:rank]
+
+    # Invert only non-zero singular values
+    s_inv = np.zeros(s.shape)
+    nonzero_inds = np.flatnonzero(sel_s != 0)
+    if len(nonzero_inds) > 0:
+        s_inv[nonzero_inds] = 1. / sel_s[nonzero_inds]
+
+    # Compute the pseudo inverse
+    x_inv = np.dot(V.T, s_inv[:, np.newaxis] * U.T)
+
+    if rank is None or rank == 'full':
+        return x_inv, loading_factor, rank_before
+    else:
+        return x_inv, loading_factor, rank

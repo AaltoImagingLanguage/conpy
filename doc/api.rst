@@ -69,3 +69,4 @@ Utilities
    :toctree: generated/
 
    get_morph_src_mapping
+   reg_pinv

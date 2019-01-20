@@ -14,7 +14,6 @@ from scipy import sparse
 
 from mne import (Forward, SourceSpaces, Label, BiHemiLabel,
                  pick_channels_forward)
-from mne.beamformer._lcmv import _reg_pinv
 from mne.utils import logger, verbose, copy_function_doc_to_method_doc
 from mne.parallel import parallel_func
 from mne.externals.h5io import read_hdf5, write_hdf5
@@ -25,6 +24,7 @@ from mne.time_frequency import pick_channels_csd
 
 from .forward import forward_to_tangential
 from .viz import plot_connectivity
+from .utils import reg_pinv
 
 
 class _BaseConnectivity(object):
@@ -1135,7 +1135,7 @@ def dics_connectivity(vertex_pairs, fwd, data_csd, reg=0.05, n_angles=50,
     G /= np.linalg.norm(G, axis=0)
 
     Cm = data_csd.get_data()
-    Cm_inv, alpha, _ = _reg_pinv(Cm, reg)
+    Cm_inv, alpha, _ = reg_pinv(Cm, reg)
     del Cm
 
     W = np.dot(G.T, Cm_inv)
