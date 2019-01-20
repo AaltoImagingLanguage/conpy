@@ -115,13 +115,25 @@ def plot_connectivity(con, n_lines=None, node_angles=None, node_width=None,
         lh_labels = [label
                      for (yp, label) in sorted(zip(label_ypos, lh_labels))]
 
+        # Second, we reorder the labels based on their location in the right
+        # hemisphere.
+        rh_labels = [name for name in names if name.endswith('rh')]
         # For the right hemi
-        rh_labels = [label[:-2] + 'rh' for label in lh_labels]
+        # Get the y-location of the label
+        rlabel_ypos = list()
+        for name in rh_labels:
+            idx = names.index(name)
+            ypos = np.mean(con.labels[idx].pos[:, 1])
+            rlabel_ypos.append(ypos)
+
+        # Reorder the labels based on their location
+        rh_labels = [label
+                     for (yp, label) in sorted(zip(rlabel_ypos, rh_labels), reverse=True)]
 
         # Save the plot order and create a circular layout
         node_order = list()
         node_order.extend(lh_labels[::-1])  # reverse the order
-        node_order.extend(rh_labels)
+        node_order.extend(rh_labels[::-1])  # reverse the order
 
         node_angles = circular_layout(names, node_order, start_pos=90,
                                       group_boundaries=[0, len(names) / 2])

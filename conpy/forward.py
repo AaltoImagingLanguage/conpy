@@ -16,7 +16,8 @@ from mne.transforms import (_ensure_trans, apply_trans, _cart_to_sph,
 from mne.io.pick import channel_type, pick_types
 from mne.bem import _fit_sphere
 from mne.io.constants import FIFF
-from mne.externals.six import string_types
+# from mne.externals.six import string_types
+from six import string_types
 from mne.utils import logger, verbose
 
 from .utils import _find_indices_1d, get_morph_src_mapping
