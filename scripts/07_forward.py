@@ -7,6 +7,7 @@ Author: Marijn van Vliet <w.m.vanvliet@gmail.com>
 from __future__ import print_function
 import argparse
 import mne
+from mayavi import mlab
 
 from config import fname, min_skull_dist, n_jobs
 
@@ -48,3 +49,19 @@ fwd = mne.make_forward_solution(
 
 mne.write_forward_solution(fname.fwd(subject=subject), fwd,
                            overwrite=True)
+with mne.open_report(fname.report(subject=subject)) as report:
+    fig = mne.viz.plot_alignment(fwd['info'],
+                                 trans=fname.trans(subject=subject),
+                                 src=subject_src, meg='sensors',
+                                 surfaces='white')
+    fig.scene.background = (1, 1, 1)  # white
+    fig.children[-1].children[0].children[0].glyph.glyph.scale_factor = 0.008
+    mlab.view(135, 120, 0.3, [0.01, 0.015, 0.058])
+    report.add_figs_to_section(
+        [fig],
+        ['Forward model'],
+        section='Source-level',
+        replace=True
+    )
+    report.save_html(fname.report_html(subject=subject), overwrite=True,
+                     open_browser=False)

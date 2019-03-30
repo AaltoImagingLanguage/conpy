@@ -22,9 +22,9 @@ from mne import Report
 user = os.environ['USER']  # Username of the user running the scripts
 host = getfqdn()  # Hostname of the machine running the scripts
 
-if user == 'marijn':
+if user == 'rodin':
     # My laptop
-    study_path = '/m/nbe/scratch/conpy'
+    study_path = '/Volumes/scratch/nbe/conpy'
     n_jobs = 4
 elif host == 'nbe-024.org.aalto.fi' and user == 'vanvlm1':
     # My workstation
@@ -217,7 +217,7 @@ fname.add('pairs', '{meg_dir}/pairs.npy')
 
 # Filenames for MNE reports
 fname.add('reports_dir', '{study_path}/reports/')
-fname.add('report', '{reports_dir}/{subject}-report.pkl')
+fname.add('report', '{reports_dir}/{subject}-report.h5')
 fname.add('report_html', '{reports_dir}/{subject}-report.html')
 
 # For FreeSurfer and MNE-Python to find the MRI data

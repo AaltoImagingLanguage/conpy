@@ -4,8 +4,7 @@ Perform bandpass filtering.
 import argparse
 import mne
 
-from config import (fname, bandpass_fmin, bandpass_fmax, n_jobs, get_report,
-                    save_report)
+from config import (fname, bandpass_fmin, bandpass_fmax, n_jobs)
 
 # Be verbose
 mne.set_log_level('INFO')
@@ -61,17 +60,20 @@ for run in range(1, 7):
     figs_after.append(raw_filt.plot_psd(show=False))
 
 # Append PDF plots to report
-report = get_report(subject)
-report.add_slider_to_section(
-    figs_before,
-    ['PSD before filtering: run %d' % i for i in range(1, 7)],
-    title='PSD before filtering',
-    section='Sensor-level'
-)
-report.add_slider_to_section(
-    figs_after,
-    ['PSD after filtering: run %d' % i for i in range(1, 7)],
-    title='PSD after filtering',
-    section='Sensor-level'
-)
-save_report(report)
+with mne.open_report(fname.report(subject=subject)) as report:
+    report.add_slider_to_section(
+        figs_before,
+        ['PSD before filtering: run %d' % i for i in range(1, 7)],
+        title='PSD before filtering',
+        section='Sensor-level',
+        replace=True
+    )
+    report.add_slider_to_section(
+        figs_after,
+        ['PSD after filtering: run %d' % i for i in range(1, 7)],
+        title='PSD after filtering',
+        section='Sensor-level',
+        replace=True
+    )
+    report.save_html(fname.report_html(subject=subject), overwrite=True,
+                     open_browser=False)

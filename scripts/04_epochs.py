@@ -6,8 +6,7 @@ import mne
 from mne.preprocessing import read_ica
 
 from config import (fname, events_id, epoch_tmin, epoch_tmax, baseline,
-                    bandpass_fmin, bandpass_fmax, reject, get_report,
-                    save_report)
+                    bandpass_fmin, bandpass_fmax, reject)
 
 # Be verbose
 mne.set_log_level('INFO')
@@ -48,12 +47,13 @@ epochs = mne.Epochs(raw, events, events_id, epoch_tmin, epoch_tmax,
                     baseline=baseline, decim=5, preload=True)
 
 # Save evoked plot to the report
-report = get_report(subject)
-report.add_figs_to_section(
-    [epochs.average().plot(show=False)],
-    ['Evoked without ICA'],
-    section='Sensor-level'
-)
+with mne.open_report(fname.report(subject=subject)) as report:
+    report.add_figs_to_section(
+        [epochs.average().plot(show=False)],
+        ['Evoked without ICA'],
+        section='Sensor-level'
+    )
+    report.save_html(fname.report_html(subject=subject), overwrite=True)
 
 # Apply ICA to the epochs, dropping components that correlate with ECG and EOG
 ica.apply(epochs)
@@ -67,9 +67,12 @@ print('  Writing to disk')
 epochs.save(fname.epo(subject=subject))
 
 # Save evoked plot to report
-report.add_figs_to_section(
-    [epochs.average().plot(show=False)],
-    ['Evoked with ICA'],
-    section='Sensor-level'
-)
-save_report(report)
+with mne.open_report(fname.report(subject=subject)) as report:
+    report.add_figs_to_section(
+        [epochs.average().plot(show=False)],
+        ['Evoked with ICA'],
+        section='Sensor-level',
+        replace=True
+    )
+    report.save_html(fname.report_html(subject=subject), overwrite=True,
+                     open_browser=False)

@@ -7,6 +7,7 @@ import argparse
 import mne
 from mne.time_frequency import read_csd
 from mne.beamformer import make_dics, apply_dics_csd
+from mayavi import mlab
 
 from config import (fname, freq_bands, conditions, reg)
 
@@ -19,6 +20,9 @@ parser.add_argument('subject', metavar='sub###', help='The subject to process')
 args = parser.parse_args()
 subject = args.subject
 print('Processing subject:', subject)
+
+# Open the HTML report
+report = mne.open_report(fname.report(subject=subject))
 
 # Read the forward model
 fwd = mne.read_forward_solution(fname.fwd(subject=subject))

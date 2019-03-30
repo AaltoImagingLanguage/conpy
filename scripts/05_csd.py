@@ -9,8 +9,7 @@ import numpy as np
 import mne
 from mne.time_frequency import csd_morlet
 
-from config import (fname, n_jobs, csd_tmin, csd_tmax, freq_bands, conditions,
-                    get_report, save_report)
+from config import fname, n_jobs, csd_tmin, csd_tmax, freq_bands, conditions
 
 # Be verbose
 mne.set_log_level('INFO')
@@ -26,10 +25,11 @@ print('Processing subject:', subject)
 print('Reading epochs...')
 epochs = mne.read_epochs(fname.epo(subject=subject))
 
-report = get_report(subject)
-
 # Suppress warning about wavelet length.
 warnings.simplefilter('ignore')
+
+# Load the report to add figures to
+report = mne.open_report(fname.report(subject=subject))
 
 # Individual frequencies to estimate the CSD for
 fmin = freq_bands[0][0]
@@ -50,7 +50,7 @@ for condition in conditions:
     csd.save(fname.csd(condition=condition, subject=subject))
     report.add_figs_to_section(csd.plot(show=False),
                                ['CSD for %s' % condition],
-                               section='Sensor-level')
+                               section='Sensor-level', replace=True)
 
 # Also compute the CSD for the baseline period (use all epochs for this,
 # regardless of condition). This way, we can compare the change in power caused
@@ -60,6 +60,13 @@ csd_baseline = csd_morlet(epochs, frequencies=frequencies, tmin=-0.2, tmax=0,
                           decim=20, n_jobs=n_jobs, verbose=True)
 csd_baseline.save(fname.csd(condition='baseline', subject=subject))
 report.add_figs_to_section(csd_baseline.plot(show=False), ['CSD for baseline'],
-                           section='Sensor-level')
+                           section='Sensor-level', replace=True)
 
-save_report(report)
+# Save the report as HDF5 for later loading (in many other script, the report
+# is loaded with a context manager, which takes care of this automatically, but
+# here we have to do it manually).
+report.save(fname.report(subject=subject), overwrite=True)
+
+# Render the report as HTML as well
+report.save_html(fname.report_html(subject=subject), overwrite=True,
+                 open_browser=False)
