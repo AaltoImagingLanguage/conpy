@@ -36,40 +36,40 @@ def tee_output(command, log_file):
         raise RuntimeError('Command failed')
 
 
-# tee_output(['recon-all', '-all', '-s', subject, '-sd', fname.subjects_dir,
-#             '-i', fname.t1(subject=subject)],
-#            fname.freesurfer_log(subject=subject))
-# 
-# print('Copying FLASH files')
-# os.makedirs(fname.flash_dir(subject=subject), exist_ok=True)
-# for f_src in glob.glob(fname.flash_glob(subject=subject)):
-#     f_dst = op.basename(f_src).replace("meflash_", "mef")
-#     f_dst = op.join(fname.flash_dir(subject=subject), f_dst)
-#     shutil.copy(f_src, f_dst)
-# 
-# # Fix the headers for subject 19
-# if subject == 'sub019':
-#     print('Fixing FLASH files for %s' % (subject,))
-#     flash_files = (['mef05_%d.mgz' % x for x in range(7)] +
-#                    ['mef30_%d.mgz' % x for x in range(7)])
-# 
-#     for flash_file in flash_files:
-#         dest_fname = op.join(fname.flash_dir(subject=subject), flash_file)
-#         dest_img = nibabel.load(op.splitext(dest_fname)[0] + '.nii.gz')
-# 
-#         # Copy the headers from the first subject
-#         src_img = nibabel.load(
-#             op.join(fname.flash_dir(subject=subjects[0]), flash_file))
-#         hdr = src_img.header
-#         fixed = nibabel.MGHImage(dest_img.get_data(), dest_img.affine, hdr)
-#         nibabel.save(fixed, dest_fname)
-# 
-# print('Converting flash MRIs')
-# mne.bem.convert_flash_mris(subject, convert=False,
-#                            subjects_dir=fname.subjects_dir)
-# 
-# print('Making BEM surfaces')
-# mne.bem.make_flash_bem(subject, subjects_dir=fname.subjects_dir, show=False)
+tee_output(['recon-all', '-all', '-s', subject, '-sd', fname.subjects_dir,
+            '-i', fname.t1(subject=subject)],
+           fname.freesurfer_log(subject=subject))
+
+print('Copying FLASH files')
+os.makedirs(fname.flash_dir(subject=subject), exist_ok=True)
+for f_src in glob.glob(fname.flash_glob(subject=subject)):
+    f_dst = op.basename(f_src).replace("meflash_", "mef")
+    f_dst = op.join(fname.flash_dir(subject=subject), f_dst)
+    shutil.copy(f_src, f_dst)
+
+# Fix the headers for subject 19
+if subject == 'sub019':
+    print('Fixing FLASH files for %s' % (subject,))
+    flash_files = (['mef05_%d.mgz' % x for x in range(7)] +
+                   ['mef30_%d.mgz' % x for x in range(7)])
+
+    for flash_file in flash_files:
+        dest_fname = op.join(fname.flash_dir(subject=subject), flash_file)
+        dest_img = nibabel.load(op.splitext(dest_fname)[0] + '.nii.gz')
+
+        # Copy the headers from the first subject
+        src_img = nibabel.load(
+            op.join(fname.flash_dir(subject=subjects[0]), flash_file))
+        hdr = src_img.header
+        fixed = nibabel.MGHImage(dest_img.get_data(), dest_img.affine, hdr)
+        nibabel.save(fixed, dest_fname)
+
+print('Converting flash MRIs')
+mne.bem.convert_flash_mris(subject, convert=False,
+                           subjects_dir=fname.subjects_dir)
+
+print('Making BEM surfaces')
+mne.bem.make_flash_bem(subject, subjects_dir=fname.subjects_dir, show=False)
 
 # Save BEM figure to report
 with mne.open_report(fname.report(subject=subject)) as report:
