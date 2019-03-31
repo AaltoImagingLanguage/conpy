@@ -75,5 +75,5 @@ mne.bem.make_flash_bem(subject, subjects_dir=fname.subjects_dir, show=False)
 with mne.open_report(fname.report(subject=subject)) as report:
     report.add_bem_to_section(subject, 'BEM surfaces', section='Anatomy',
                               n_jobs=n_jobs, replace=True)
-    report.save_html(fname.report_html(subject=subject), overwrite=True,
-                     open_browser=False)
+    report.save(fname.report_html(subject=subject), overwrite=True,
+                open_browser=False)

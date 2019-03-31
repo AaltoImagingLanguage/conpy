@@ -49,6 +49,26 @@ for fwd, vert_ind, subject in zip(fwds, vert_inds, subjects):
     if subject == subjects[0]:
         fwd1 = fwd_r
 
+    # Save a visualization of the restricted forward operator to the subject's
+    # HTML report
+    with mne.open_report(fname.report(subject=subject)) as report:
+        fig = mne.viz.plot_alignment(fwd['info'],
+                                     trans=fname.trans(subject=subject),
+                                     src=fwd_r['src'], meg='sensors',
+                                     surfaces='white')
+        fig.scene.background = (1, 1, 1)  # white
+        g = fig.children[-1].children[0].children[0].glyph.glyph
+        g.scale_factor = 0.008
+        mlab.view(135, 120, 0.3, [0.01, 0.015, 0.058])
+        report.add_figs_to_section(
+            [fig],
+            ['Selected sources'],
+            section='Source-level',
+            replace=True
+        )
+        report.save(fname.report_html(subject=subject), overwrite=True,
+                    open_browser=False)
+
 # Compute vertex pairs for which to compute connectivity
 # (distances are based on the MRI of the first subject).
 print('Computing connectivity pairs for all subjects...')
@@ -62,19 +82,3 @@ pairs = [[subj1_to_fsaverage[v] for v in pairs[0]],
          [subj1_to_fsaverage[v] for v in pairs[1]]]
 np.save(fname.pairs, pairs)
 
-with mne.open_report(fname.report(subject=subject)) as report:
-    fig = mne.viz.plot_alignment(fwd['info'],
-                                 trans=fname.trans(subject=subject),
-                                 src=fwd_r['src'], meg='sensors',
-                                 surfaces='white')
-    fig.scene.background = (1, 1, 1)  # white
-    fig.children[-1].children[0].children[0].glyph.glyph.scale_factor = 0.008
-    mlab.view(135, 120, 0.3, [0.01, 0.015, 0.058])
-    report.add_figs_to_section(
-        [fig],
-        ['Selected sources'],
-        section='Source-level',
-        replace=True
-    )
-    report.save_html(fname.report_html(subject=subject), overwrite=True,
-                     open_browser=False)

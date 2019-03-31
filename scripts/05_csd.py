@@ -68,5 +68,5 @@ report.add_figs_to_section(csd_baseline.plot(show=False), ['CSD for baseline'],
 report.save(fname.report(subject=subject), overwrite=True)
 
 # Render the report as HTML as well
-report.save_html(fname.report_html(subject=subject), overwrite=True,
-                 open_browser=False)
+report.save(fname.report_html(subject=subject), overwrite=True,
+            open_browser=False)

@@ -74,5 +74,5 @@ with mne.open_report(fname.report(subject=subject)) as report:
         section='Sensor-level',
         replace=True
     )
-    report.save_html(fname.report_html(subject=subject), overwrite=True,
-                     open_browser=False)
+    report.save(fname.report_html(subject=subject), overwrite=True,
+                open_browser=False)
