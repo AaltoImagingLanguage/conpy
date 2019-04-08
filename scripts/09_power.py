@@ -64,11 +64,9 @@ for condition in conditions + ['baseline']:
 stc_contrast = (stcs[conditions[0]] - stcs[conditions[1]]) / stcs['baseline']
 figs = []
 for i, freq in enumerate(freq_bands):
-    fig = mlab.figure(size=(300, 300))
+    fig = mlab.figure()
     mlab.clf()
-    brain3 = stc_contrast.plot(subject='sub002', hemi='both',
-                               background='white', foreground='black',
-                               time_label='', colormap='mne', initial_time=i,
+    brain3 = stc_contrast.plot(subject=subject, hemi='both', initial_time=i,
                                title='%s-%s Hz' % freq, figure=fig)
     mlab.view(-90, 110, 420, [0, 0, 0], figure=fig)
     figs.append(fig)
