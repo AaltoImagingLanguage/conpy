@@ -30,6 +30,7 @@ fwd = mne.read_forward_solution(fname.fwd(subject=subject))
 
 # Read the info structure
 info = mne.io.read_info(fname.epo(subject=subject))
+info = mne.pick_info(info, mne.pick_types(info, meg='grad'))
 
 # Compute source power for all frequency bands and all conditions
 fmin = [f[0] for f in freq_bands]
@@ -75,8 +76,10 @@ for i, freq in enumerate(freq_bands):
 with mne.open_report(fname.report(subject=subject)) as report:
     report.add_slider_to_section(
         figs,
-        ['%s-%s Hz' % freq for freq in freqs],
+        ['%s-%s Hz' % freq for freq in freq_bands],
         title='Power contrast',
         section='Source-level',
         replace=True
     )
+    report.save(fname.report_html(subject=subject), overwrite=True,
+                open_browser=False)
