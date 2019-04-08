@@ -8,6 +8,7 @@ from __future__ import print_function
 import argparse
 import mne
 from mayavi import mlab
+mlab.options.offscreen = True  # Don't open a window when rendering figure
 
 from config import fname, min_skull_dist, n_jobs
 

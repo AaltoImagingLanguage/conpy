@@ -13,6 +13,7 @@ import numpy as np
 import mne
 import conpy
 from mayavi import mlab
+mlab.options.offscreen = True  # Don't open a window when rendering figure
 
 from config import fname, subjects, max_sensor_dist, min_pair_dist
 
@@ -81,4 +82,3 @@ subj1_to_fsaverage = conpy.utils.get_morph_src_mapping(
 pairs = [[subj1_to_fsaverage[v] for v in pairs[0]],
          [subj1_to_fsaverage[v] for v in pairs[1]]]
 np.save(fname.pairs, pairs)
-
