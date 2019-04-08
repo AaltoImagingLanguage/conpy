@@ -8,6 +8,7 @@ import numpy as np
 import mne
 from mne.time_frequency import read_csd, pick_channels_csd
 import conpy
+from matplotlib import pyplot as plt
 
 from config import fname, con_fmin, con_fmax, conditions, reg, n_jobs
 
@@ -40,7 +41,8 @@ fsaverage_to_subj = conpy.utils.get_morph_src_mapping(
 pairs = [[fsaverage_to_subj[v] for v in pairs[0]],
          [fsaverage_to_subj[v] for v in pairs[1]]]
 
-# Compute connectivity for all one frequency band across all conditions
+# Compute connectivity for one frequency band across all conditions
+cons = dict()
 for condition in conditions:
     print('Computing connectivity for condition:', condition)
     # Read the CSD matrix
@@ -60,5 +62,14 @@ for condition in conditions:
         reg=reg,
         n_jobs=n_jobs,
     )
+    cons[condition] = con
 
     con.save(fname.con(condition=condition, subject=subject))
+
+# Save a plot of the adjacency matrix to the HTML report
+with mne.open_report(fname.report(subject=subject)) as report:
+    adj = (cons[conditions[0]] - cons[conditions[1]]).get_adjacency()
+    report.add_figs_to_section(plt.matshow(adj), ['Adjacency matrix'],
+                               section='Source-level', replace=True)
+    report.save(fname.report_html(subject=subject), overwrite=True,
+                open_browser=False)
