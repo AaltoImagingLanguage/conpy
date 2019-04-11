@@ -9,9 +9,6 @@ Configuration parameters for the study.
 import os
 from socket import getfqdn
 from fnames import FileNames
-import pickle
-from mne import Report
-
 
 ###############################################################################
 # Determine which user is running the scripts on which machine and set the path
@@ -45,6 +42,9 @@ else:
                        'variable to point to the location where the data '
                        'should be stored and the n_jobs variable to the '
                        'number of CPU cores the analysis is allowed to use.')
+
+# For BLAS to use the right amount of cores
+os.environ['OMP_NUM_THREADS'] = str(n_jobs)
 
 
 ###############################################################################
@@ -222,31 +222,3 @@ fname.add('report_html', '{reports_dir}/{subject}-report.html')
 
 # For FreeSurfer and MNE-Python to find the MRI data
 os.environ["SUBJECTS_DIR"] = fname.subjects_dir
-
-# For BLAS to use the right amount of cores
-os.environ['OMP_NUM_THREADS'] = str(n_jobs)
-
-
-def get_report(subject):
-    """Get a Report object for a subject.
-
-    If the Report had been saved (pickle'd) before, load it. Otherwise,
-    construct a new one.
-    """
-    report_fname = fname.report(subject=subject)
-    if os.path.exists(report_fname):
-        with open(report_fname, 'rb') as f:
-            return pickle.load(f)
-    else:
-        return Report(subjects_dir=fname.subjects_dir, subject=subject,
-                      title='Analysis for %s' % subject)
-
-
-def save_report(report):
-    """Save a Report object using pickle and render it to HTML."""
-    report_fname = fname.report(subject=report.subject)
-    with open(report_fname, 'wb') as f:
-        pickle.dump(report, f)
-    report.save(fname.report_html(subject=report.subject), open_browser=False,
-                overwrite=True)
-
