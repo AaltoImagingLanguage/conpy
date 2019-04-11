@@ -68,8 +68,16 @@ for condition in conditions:
 
 # Save a plot of the adjacency matrix to the HTML report
 with mne.open_report(fname.report(subject=subject)) as report:
+    print('a')
     adj = (cons[conditions[0]] - cons[conditions[1]]).get_adjacency()
-    report.add_figs_to_section(plt.matshow(adj), ['Adjacency matrix'],
+    print('b')
+    fig = plt.figure()
+    print('c')
+    plt.imshow(adj.toarray(), interpolation='nearest')
+    print('d')
+    report.add_figs_to_section(fig, ['Adjacency matrix'],
                                section='Source-level', replace=True)
+    print('e')
     report.save(fname.report_html(subject=subject), overwrite=True,
                 open_browser=False)
+    print('f')
