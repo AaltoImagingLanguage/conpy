@@ -62,7 +62,6 @@ for condition in conditions:
         reg=reg,
         n_jobs=n_jobs,
     )
-    con = conpy.read_connectivity(fname.con(condition=condition, subject=subject))
     cons[condition] = con
 
     con.save(fname.con(condition=condition, subject=subject))
