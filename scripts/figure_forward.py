@@ -1,3 +1,11 @@
+# encoding: utf-8
+"""
+This script makes two plots:
+1. The source space and sensor grid.
+1. The source dipoles of the forward model in "tangential" form.
+
+Author: Marijn van Vliet <w.m.vanvliet@gmail.com>
+"""
 from mayavi import mlab
 import mne
 from mne.bem import _fit_sphere

@@ -1,3 +1,13 @@
+# encoding: utf-8
+"""
+This script makes two plots:
+1. Makes a plot of the grand-average DICS source power estimate for the alpha
+   band.
+2. Makes a plot of the grand-average DICS source power estimate, contrasted
+   between conditions, for each frequency band.
+
+Author: Marijn van Vliet <w.m.vanvliet@gmail.com>
+"""
 import mne
 from mayavi import mlab
 

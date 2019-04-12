@@ -1,3 +1,9 @@
+# encoding: utf-8
+"""
+Makes a plot of the CSD matrix.
+
+Author: Marijn van Vliet <w.m.vanvliet@gmail.com>
+"""
 from matplotlib import pyplot as plt
 import mne
 from mne.time_frequency import read_csd, pick_channels_csd

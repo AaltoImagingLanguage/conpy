@@ -1,3 +1,10 @@
+# encoding: utf-8
+"""
+Makes a plot of the grand-average connectivity, contrasted between conditions.
+Both the degree map and the circle diagram are plotted.
+
+Author: Marijn van Vliet <w.m.vanvliet@gmail.com>
+"""
 import conpy
 from mayavi import mlab
 
