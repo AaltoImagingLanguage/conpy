@@ -981,7 +981,7 @@ except:
 
 
 def _compute_dics_coherence(W, G, vert_ind_from, vert_ind_to, spec_power_inv,
-                            orientations):
+                            orientations, coh_metric='absolute'):
     """Compute the coherence between two sources using a DICS beamformer.
 
     Computes the coherence between two dipoles for different angles and returns
@@ -1005,6 +1005,10 @@ def _compute_dics_coherence(W, G, vert_ind_from, vert_ind_to, spec_power_inv,
     orientations : ndarray, shape (n_orient, n_angles)
         For each angle to try, a unit vector pointing in the direction of the
         angle.
+    coh_metric : 'absolute' | 'imaginary'
+        The coherence metric to use. Either the square of absolute coherence
+        ('absolute') or the square of the imaginary part of the coherence
+        ('imaginary'). Defaults to 'absolute'.
 
     Returns
     -------
@@ -1029,7 +1033,10 @@ def _compute_dics_coherence(W, G, vert_ind_from, vert_ind_to, spec_power_inv,
         opt1 = power_cross_inv.dot(orientations)
         opt1 = opt1.transpose(0, 2, 1).dot(orientations).transpose(0, 2, 1)
 
-    opt1 = np.abs(opt1)
+    if coh_metric == 'absolute':
+        opt1 = np.abs(opt1)
+    elif coh_metric == 'imaginary':
+        opt1 = np.imag(opt1)
 
     # Computes np.diag(orientations.T @ power_from_inv @ orientations)
     opt2 = np.sum(orientations * power_from_inv.dot(orientations), axis=1)
@@ -1047,9 +1054,11 @@ def _compute_dics_coherence(W, G, vert_ind_from, vert_ind_to, spec_power_inv,
 def dics_connectivity_to_external_signal():
     pass
 
+
 @verbose
-def dics_connectivity(vertex_pairs, fwd, data_csd, reg=0.05, n_angles=50,
-                      block_size=10000, n_jobs=1, verbose=None):
+def dics_connectivity(vertex_pairs, fwd, data_csd, reg=0.05,
+                      coh_metric='absolute', n_angles=50, block_size=10000,
+                      n_jobs=1, verbose=None):
     """Compute spectral connectivity using a DICS beamformer.
 
     Calculates the connectivity between the given vertex pairs using a DICS
@@ -1077,6 +1086,10 @@ def dics_connectivity(vertex_pairs, fwd, data_csd, reg=0.05, n_angles=50,
     reg : float
         Tikhonov regularization parameter to control for trade-off between
         spatial resolution and noise sensitivity. Defaults to 0.05.
+    coh_metric : 'absolute' | 'imaginary'
+        The coherence metric to use. Either the square of absolute coherence
+        ('absolute') or the square of the imaginary part of the coherence
+        ('imaginary'). Defaults to 'absolute'.
     n_angles : int
         Number of angles to try when optimizing dipole orientations. Defaults
         to 50.
@@ -1175,7 +1188,8 @@ def dics_connectivity(vertex_pairs, fwd, data_csd, reg=0.05, n_angles=50,
             vertex_from_map[block],
             vertex_to_map[block],
             spec_power_inv,
-            orientations
+            orientations,
+            coh_metric,
         )
         for block in blocks
     ))
