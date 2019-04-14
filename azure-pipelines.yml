@@ -1,0 +1,54 @@
+trigger:
+- master
+
+jobs:
+- job: 'Test'
+  pool:
+    vmImage: 'Ubuntu-16.04'
+  steps:
+  - bash: |
+      echo "##vso[task.prependpath]$CONDA/bin"
+      sudo chown -R $USER /usr/share/miniconda
+      conda env create --quiet --file environment.yml
+      . /usr/share/miniconda/etc/profile.d/conda.sh
+      conda activate conpy
+    displayName: 'Setup python environment'
+
+  - script: python setup.py develop --user
+    displayName: 'Install conpy'
+
+  - bash: |
+      . /usr/share/miniconda/etc/profile.d/conda.sh
+      conda activate conpy
+      /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -screen 0 1400x900x24 -ac +extension GLX +render -noreset
+      export DISPLAY=:99.0
+      python -c "import mne; mne.sys_info()"
+      python -c "from mayavi import mlab; import matplotlib.pyplot as plt; mlab.figure(); plt.figure()"
+    displayName: 'Start X Virtual Frame Buffer'
+    
+  - script: |
+      . /usr/share/miniconda/etc/profile.d/conda.sh
+      conda activate conpy
+      python -c "import mne; print(mne.datasets.sample.data_path(update_path=True, verbose=False))";
+      python -c "import mne; print(mne.datasets.testing.data_path(update_path=True, verbose=False))";
+      pytest tests --doctest-modules --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html
+    displayName: 'Run unit tests'
+    
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFiles: '**/test-results.xml'
+      testRunTitle: 'Python $(python.version)'
+    condition: succeededOrFailed()
+
+  - bash: |
+      . /usr/share/miniconda/etc/profile.d/conda.sh
+      conda activate conpy
+      export DISPLAY=:99.0
+      cd doc
+      make html
+    displayName: 'Build documentation'
+
+  - task: PublishPipelineArtifact@0
+    inputs:
+      artifactName: 'doc'
+      targetPath: 'doc/_build/html'

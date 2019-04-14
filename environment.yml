@@ -1,0 +1,28 @@
+name: conpy
+channels:
+- defaults
+dependencies:
+- python=3.7
+- pip
+- numpy
+- numpydoc
+- scipy
+- matplotlib
+- vtk
+- ipython
+- jupyter
+- h5py
+- pyqt
+- pytest
+- pytest-cov
+- tqdm
+- sphinx
+- pip:
+  - mne
+  - traits
+  - traitsui
+  - pyface
+  - mayavi
+  - pysurfer
+  - sphinx_gallery
+  - sphinx_bootstrap_theme

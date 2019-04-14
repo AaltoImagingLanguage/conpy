@@ -1,3 +1,5 @@
+[![Build Status](https://dev.azure.com/marijnvanvliet/marijnvanvliet/_apis/build/status/AaltoImagingLanguage.conpy?branchName=master)](https://dev.azure.com/marijnvanvliet/marijnvanvliet/_build/latest?definitionId=2&branchName=master)
+
 Conpy
 -----
 A Python library implementing the DICS beamformer for connectivity analysis and power mapping on the cortex. This is a Python reimplementation of the MATLAB code originally developed for [1]. This repository also holds the code complementing our submission to the Frontiers Research Topic: [From raw MEG/EEG to publication: how to perform MEG/EEG group analysis with free academic software](https://www.frontiersin.org/research-topics/5158)

@@ -7,7 +7,13 @@ import numpy as np
 from mne.source_space import (_ensure_src, _get_morph_src_reordering,
                               _ensure_src_subject, SourceSpaces)
 from mne.utils import warn, get_subjects_dir
-from mne.rank import estimate_rank
+
+try:
+    # MNE-Python 0.18 and up
+    from mne.rank import estimate_rank
+except ImportError:
+    # Older verions of MNE-Python
+    from mne.utils import estimate_rank
 
 
 def _make_diagonal_noise_matrix(csd, reg):
