@@ -11,7 +11,7 @@ A Python library implementing the DICS beamformer for connectivity analysis and 
 
 Installation instructions
 -------------------------
-Conpy requires a Python (either 2.7 or 3.5+) installation with the following packages: numpy, scipy, mayavi, mne, doit, tqdm. 
+Conpy requires a Python (3.5+) installation with the following packages: numpy, scipy, mayavi, mne, pysurfer, doit, tqdm (see `requirements.txt`. 
 Numba is an optional dependency that, when installed, will speed up the connectivity estimation by about 100%.
 
 To install the conpy module, run:
@@ -37,7 +37,9 @@ The contents of the `study_path` folder will grow to about 600GB.
 
 Next, run `python check_system.py` to perform a series of checks to see if the data can be found and the required Python packages are properly installed. 
 If everything is well, you can run the conpy pipeline in its entirety by using the [doit tool](http://pydoit.org/): `python -m doit`. This will download the data and run every step of the pipeline on all subjects and produce the figures that were presented in the publication. Use `python -m doit list` to see a list of the steps and use `python -m doit <step>` to run a single step.
-The last steps of the pipeline produce the figures, which are saved in `paper/figures`.
+
+During the execution of the pipeline, visualizations of the data flowing through the pipeline are added to HTML report files that are collected in the `reports/` folder.
+The last steps of the pipeline produce the figures used in the paper, which are saved in `paper/figures`.
 
 The main advantage of using an [automated build system](https://en.wikipedia.org/wiki/Build_automation) like `doit` is that the system keeps track of each step that has successfully completed.
 Should something go wrong or crash, `doit` can pick up the analysis again where it left off and avoids re-doing a step that was already completed.
