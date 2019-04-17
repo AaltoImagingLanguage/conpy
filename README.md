@@ -11,7 +11,7 @@ A Python library implementing the DICS beamformer for connectivity analysis and 
 
 Installation instructions
 -------------------------
-Conpy requires a Python (3.5+) installation with the following packages: numpy, scipy, mayavi, mne, pysurfer, doit, tqdm (see `requirements.txt`. 
+Conpy requires a Python (3.5+) installation with the following packages: numpy, scipy, mayavi, mne, pysurfer, doit, tqdm (see [`requirements.txt`](https://github.com/AaltoImagingLanguage/conpy/blob/master/requirements.txt) for installation with `pip` or ['environment.yml`](https://github.com/AaltoImagingLanguage/conpy/blob/master/environment.yml) for installation with `conda`). 
 Numba is an optional dependency that, when installed, will speed up the connectivity estimation by about 100%.
 
 To install the conpy module, run:
