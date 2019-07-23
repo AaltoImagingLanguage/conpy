@@ -51,9 +51,10 @@ with mne.open_report(fname.report(subject=subject)) as report:
     report.add_figs_to_section(
         [epochs.average().plot(show=False)],
         ['Evoked without ICA'],
-        section='Sensor-level'
+        section='Sensor-level',
+        replace=True
     )
-    report.save_html(fname.report_html(subject=subject), overwrite=True)
+    report.save(fname.report_html(subject=subject), overwrite=True)
 
 # Apply ICA to the epochs, dropping components that correlate with ECG and EOG
 ica.apply(epochs)
