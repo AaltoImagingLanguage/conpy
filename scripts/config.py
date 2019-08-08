@@ -16,7 +16,7 @@ from fnames import FileNames
 # only section you need to modify to replicate the pipeline as presented in van
 # Vliet et al. 2018.
 
-user = os.environ['USER']  # Username of the user running the scripts
+user = os.getlogin()  # Username of the user running the scripts
 host = getfqdn()  # Hostname of the machine running the scripts
 
 if user == 'rodin':
