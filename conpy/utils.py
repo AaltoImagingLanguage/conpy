@@ -128,7 +128,7 @@ def get_morph_src_mapping(src_from, src_to, subject_from=None,
         subject_to = src_to[0]['subject_his_id']
     subjects_dir = get_subjects_dir(subjects_dir, raise_error=True)
 
-    src_from = _ensure_src(src_from, kind='surf')
+    src_from = _ensure_src(src_from, kind='surface')
     subject_from = _ensure_src_subject(src_from, subject_from)
 
     if isinstance(src_to, SourceSpaces):
