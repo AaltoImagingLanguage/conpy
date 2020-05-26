@@ -280,7 +280,7 @@ mlab.title('DICS power map at %.1f Hz' % f[0], height=0.9)
 
 ###############################################################################
 # Excellent! Both methods found our two simulated sources. Of course, with a
-# signal-to-noise ratio (SNR) of 1, is isn't very hard to find them. You can
+# signal-to-noise ratio (SNR) of 1, it isn't very hard to find them. You can
 # try playing with the SNR and see how the MNE-dSPM and DICS results hold up in
 # the presense of increasing noise.
 

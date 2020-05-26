@@ -36,7 +36,7 @@ def _info():
     path = mne.datasets.sample.data_path()
     return mne.io.read_info(
         op.join(path, 'MEG', 'sample', 'sample_audvis_raw.fif')
-        )
+    )
 
 
 def test_find_indices_1d():
