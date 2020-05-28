@@ -223,15 +223,15 @@ filters = make_dics(epochs.info, fwd, csd_signal, reg=1, pick_ori='max-power')
 power, f = apply_dics_csd(csd_signal, filters)
 
 # Plot the DICS power map.
-#brain = power.plot('sample', subjects_dir=subjects_dir, hemi='both', figure=2,
-#                   size=400)
+brain = power.plot('sample', subjects_dir=subjects_dir, hemi='both', figure=2,
+                   size=400)
 
 # Indicate the true location of the source activity on the plot.
-#brain.add_foci(source_vert, coords_as_verts=True, hemi='lh')
+brain.add_foci(source_vert, coords_as_verts=True, hemi='lh')
 
 # Rotate the view and add a title.
-#mlab.view(0, 0, 550, [0, 0, 0])
-#mlab.title('DICS power map at %.1f Hz' % f[0], height=0.9)
+mlab.view(0, 0, 550, [0, 0, 0])
+mlab.title('DICS power map at %.1f Hz' % f[0], height=0.9)
 
 ###############################################################################
 # Excellent! Both methods found our two simulated cortical source. Of course,
@@ -254,19 +254,20 @@ power, f = apply_dics_csd(csd_signal, filters)
 # The diagonal of this CSD matrix contains the power for each sensor, which we
 # can use to compute the denominator of the equation.
 
-csd_signal = csd_morlet(epochs['signal'], frequencies=[10],picks=['grad','misc'])
+csd_signal = csd_morlet(epochs['signal'], frequencies=[10],
+                        picks=['grad', 'misc'])
 csd_signal.plot(mode='coh')
 csd_data = csd_signal.get_data(10)
 diag_data = np.diag(csd_data)
 
 # plot coherence
 psd = np.diag(csd_data).real
-coh = np.abs(csd_data)**2/psd[np.newaxis,:]/psd[:,np.newaxis]
+coh = np.abs(csd_data)**2 / psd[np.newaxis, :] / psd[:, np.newaxis]
 plt.imshow(coh)
 
 # plot topomap of coherence
-info_grads = mne.pick_info(info,mne.pick_types(info,meg='grad'))
-mne.viz.plot_topomap(coh[:-1,-1],info_grads)
+info_grads = mne.pick_info(info, mne.pick_types(info, meg='grad'))
+mne.viz.plot_topomap(coh[:-1, -1], info_grads)
 
 ###############################################################################
 # Source-level coherence with external source
@@ -280,11 +281,21 @@ mne.viz.plot_topomap(coh[:-1,-1],info_grads)
 #
 source_power = power.data[0]
 external_power = psd[-1]
-source_csd=(filters['weights'][0]@csd_data[:-1,-1])
+source_csd = (filters['weights'][0] @ csd_data[:-1, -1])
 
-coherence = source_csd**2/(source_power * external_power)
+coherence = source_csd ** 2 / (source_power * external_power)
 
-stc=mne.SourceEstimate(coherence[:,np.newaxis],vertices=filters['vertices'], tmin=0,tstep=1)
+stc_coh = mne.SourceEstimate(coherence[:, np.newaxis],
+                             vertices=filters['vertices'], tmin=0, tstep=1)
+brain = stc_coh.plot('sample', subjects_dir=subjects_dir, hemi='both')
+
+# Indicate the true location of the source activity on the plot.
+brain.add_foci(source_vert, coords_as_verts=True, hemi='lh')
+
+# Rotate the view and add a title.
+mlab.view(0, 0, 550, [0, 0, 0])
+mlab.title('Coherence with external sensor', height=0.9)
+
 ###############################################################################
 # References
 # ----------
