@@ -6,7 +6,7 @@ from .forward import (restrict_forward_to_sensor_range, forward_to_tangential,
 from .connectivity import (all_to_all_connectivity_pairs,
                            one_to_all_connectivity_pairs, dics_connectivity,
                            VertexConnectivity, LabelConnectivity,
-                           read_connectivity)
+                           read_connectivity,dics_coherence_external)
 from .stats import (group_connectivity_ttest, cluster_threshold,
                     cluster_permutation_test)
 from . import utils

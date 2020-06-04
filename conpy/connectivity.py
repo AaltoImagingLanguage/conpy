@@ -13,7 +13,7 @@ from scipy.spatial.distance import pdist, cdist
 from scipy import sparse
 
 from mne import (Forward, SourceSpaces, Label, BiHemiLabel,
-                 pick_channels_forward)
+                 pick_channels_forward, SourceEstimate)
 from mne.utils import logger, verbose, copy_function_doc_to_method_doc
 from mne.parallel import parallel_func
 from mne.externals.h5io import read_hdf5, write_hdf5
@@ -21,6 +21,7 @@ from mne.source_estimate import _make_stc
 from mne.source_space import (_ensure_src, _get_morph_src_reordering,
                               _ensure_src_subject)
 from mne.time_frequency import pick_channels_csd
+from mne.beamformer import apply_dics_csd
 
 from .forward import forward_to_tangential
 from .viz import plot_connectivity
@@ -1202,3 +1203,43 @@ def dics_connectivity(vertex_pairs, fwd, data_csd, reg=0.05,
         vertex_degree=None,  # Compute this in the constructor
         subject=fwd['src'][0]['subject_his_id'],
     )
+
+
+def dics_coherence_external(csd,dics,external=None):
+    '''Coherence between source level MEG and external signal(s)
+    
+    Parameters
+    ----------
+    csd : CrossSpectralDensity
+        All-to-all cross-spectral density that includes all MEG / EEG channels 
+        and the external signals.
+    dics : Beamformer
+        DICS beamformer to compute source power.
+    external : str | list | slice | None
+        Channels to use as external signal. Slices and lists of integers will 
+        be interpreted as channel indices. In lists, channel type strings 
+        (e.g., ['misc','emg']) will pick channels of those types, channel name 
+        strings (e.g.,['MISC0001', 'EMG001'] will pick the given channels. Can 
+        also be the string values “all” to pick all channels, or “data” to pick 
+        data channels. None (default) will pick all channels that are not MEG 
+        or EEG channels.
+
+    Return
+    ------
+    stc_coh : SourceEstimate | list of SourceEstimates
+        Coherence between all source vertices and external signal(s).
+    '''
+    
+    source_power, _ = apply_dics_csd(csd,dics)
+    source_power = source_power.data[:,0]
+    csd_data = csd.get_data()
+    psd = np.diag(csd_data).real
+    external_power = psd[-1]
+    source_csd = dics['weights'][0].dot(csd_data[:-1, -1])
+
+    coherence = source_csd ** 2 / (source_power * external_power)
+
+    stc_coh = SourceEstimate(coherence[:, np.newaxis],
+                             vertices=dics['vertices'], tmin=0, tstep=1)
+    
+    return stc_coh
