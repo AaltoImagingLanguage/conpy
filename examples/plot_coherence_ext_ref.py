@@ -5,11 +5,11 @@ Coherence analysis with external signal
 
 In this tutorial, we're going to simulate one signal originating from a
 location on the cortex, and one signal originating from an external sensor.
-These signals will
-also be coherent_, which means they are correlated in the frequency domain.
-We will then use dynamic imaging of coherent sources (DICS) [1]_ to map out the
-cortical coherence between all areas of the cortex and the external sensor and
-see if we can find the location of the simulated coherent source.
+These signals will also be coherent_, which means they are correlated in the
+frequency domain.  We will then use dynamic imaging of coherent sources (DICS)
+[1]_ to map out the cortical coherence between all areas of the cortex and the
+external sensor and see if we can find the location of the simulated coherent
+source.
 
 .. _coherent: https://en.wikipedia.org/wiki/Coherence_(signal_processing)
 """
@@ -229,10 +229,10 @@ power, f = apply_dics_csd(csd_signal, dics)
 brain = power.plot('sample', subjects_dir=subjects_dir, hemi='both', figure=2,
                    size=400)
 
- Indicate the true location of the source activity on the plot.
+# Indicate the true location of the source activity on the plot.
 brain.add_foci(source_vert, coords_as_verts=True, hemi='lh')
 
- Rotate the view and add a title.
+# Rotate the view and add a title.
 mlab.view(0, 0, 550, [0, 0, 0])#
 mlab.title('DICS power map at %.1f Hz' % f[0], height=0.9)
 
