@@ -237,10 +237,9 @@ mlab.view(0, 0, 550, [0, 0, 0])#
 mlab.title('DICS power map at %.1f Hz' % f[0], height=0.9)
 
 ###############################################################################
-# Excellent! Both methods found our two simulated cortical source. Of course,
-# with a signal-to-noise ratio (SNR) of 1, it isn't very hard to find. You can
-# try playing with the SNR and see how the MNE-dSPM and DICS results hold up in
-# the presence of increasing noise.
+# You can clearly see where our simulated source is in the brain. Now, let's
+# move on to computing coherence between our brain source and the external
+# sensor.
 
 ###############################################################################
 # Sensor-level coherence with external source
