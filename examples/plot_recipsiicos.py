@@ -23,7 +23,7 @@ from mayavi import mlab
 from matplotlib import pyplot as plt
 
 import mne
-from mne.datasets import sample
+from mne.datasets import sample, testing
 from mne.minimum_norm import make_inverse_operator, apply_inverse
 from mne.beamformer import make_lcmv, apply_lcmv_cov
 
@@ -39,6 +39,11 @@ mri_path = op.join(subjects_dir, 'sample')
 meg_path = op.join(data_path, 'MEG', 'sample')
 trans_fname = op.join(meg_path, 'sample_audvis_raw-trans.fif')
 fwd_fname = op.join(meg_path, 'sample_audvis-meg-eeg-oct-6-fwd.fif')
+
+# Later on, we'll use the forward model defined in the MNE-testing dataset
+testing_path = op.join(testing.data_path(download=False), 'MEG', 'sample')
+fwd_lim_fname = op.join(testing_path,
+                        'sample_audvis_trunc-meg-eeg-oct-4-fwd.fif')
 
 # Seed for the random number generator
 np.random.seed(42)
@@ -137,7 +142,7 @@ SNR = 0.1  # Signal-to-noise ratio. Decrease to add more noise.
 fwd = mne.read_forward_solution(fwd_fname)
 fwd = mne.convert_forward_solution(fwd, surf_ori=True)
 
-# Use only magneto
+# Use only magnetometers
 fwd = mne.pick_types_forward(fwd, meg='mag', eeg=False, exclude='bads')
 
 # Create an info object that holds information about the sensors (their
@@ -180,7 +185,7 @@ epochs = mne.EpochsArray(
 )
 
 # Plot the simulated data
-epochs.plot()
+# epochs.plot()
 
 ###############################################################################
 # Power mapping
@@ -225,7 +230,10 @@ cov_signal = mne.compute_covariance(epochs['signal'])
 # Compute the LCMV powermap. For this simulated dataset, we need a lot of
 # regularization for the beamformer to behave properly. For real recordings,
 # this amount of regularization is probably too much.
-filters = make_lcmv(epochs.info, fwd, cov_signal, reg=1, pick_ori='normal', recipsiicos=100)
+fwd_lim = mne.read_forward_solution(fwd_lim_fname)
+fwd_lim = mne.convert_forward_solution(fwd_lim, surf_ori=True)
+fwd_lim = mne.pick_types_forward(fwd_lim, meg='mag', eeg=False, exclude='bads')
+filters = make_lcmv(epochs.info, fwd_lim, cov_signal, reg=1, pick_ori='normal', recipsiicos=100)
 power = apply_lcmv_cov(cov_signal, filters)
 
 # Plot the LCMV power map.
