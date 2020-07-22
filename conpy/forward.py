@@ -177,7 +177,7 @@ def restrict_forward_to_vertices(fwd, vertno_or_idx, check_vertno=True,
     Returns
     -------
     fwd_out : instance of Forward
-        The restrcted forward operator.
+        The restricted forward operator.
 
     See Also
     --------
