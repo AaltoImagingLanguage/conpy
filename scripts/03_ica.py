@@ -68,7 +68,7 @@ eog_epochs.load_data()
 eog_epochs.apply_baseline((None, None))
 eog_inds, eog_scores = ica.find_bads_eog(eog_epochs)
 eog_scores = np.max(np.abs(eog_scores), axis=0)
-# Remove all components with a correlation > 0.1 to the EOG channels and that
+# Look for components with a correlation > 0.1 to the EOG channels and that
 # have not already been flagged as ECG components
 rank = np.argsort(eog_scores)[::-1]
 rank = [r for r in rank if eog_scores[r] > 0.1 and r not in ecg_inds]
