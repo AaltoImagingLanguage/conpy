@@ -164,7 +164,7 @@ stc = mne.SourceEstimate(
 # Before we simulate the sensor-level data, let's define a signal-to-noise
 # ratio. You are encouraged to play with this parameter and see the effect of
 # noise on our results.
-SNR = 1  # Signal-to-noise ratio. Decrease to add more noise.
+SNR = 5  # Signal-to-noise ratio. Decrease to add more noise.
 
 ###############################################################################
 # Now we run the signal through the forward model to obtain simulated sensor
@@ -260,10 +260,9 @@ mlab.title('MNE-dSPM inverse (RMS)', height=0.9)
 # signal.
 csd_signal = csd_morlet(epochs['signal'], frequencies=[10])
 
-# Compute the DICS powermap. For this simulated dataset, we need a lot of
-# regularization for the beamformer to behave properly. For real recordings,
-# this amount of regularization is probably too much.
-filters = make_dics(epochs.info, fwd, csd_signal, reg=1, pick_ori='max-power')
+# Compute the DICS powermap.
+filters = make_dics(epochs.info, fwd, csd_signal, inversion='single',
+                    pick_ori='max-power')
 power, f = apply_dics_csd(csd_signal, filters)
 
 # Plot the DICS power map.
@@ -421,16 +420,18 @@ print('There are now %d connectivity pairs' % len(pairs[0]))
 # Compute coherence between all defined pairs using DICS. This connectivity
 # estimate will be dominated by local field spread effects, unless we make a
 # contrast between two conditions.
-con_noise = dics_connectivity(pairs, fwd_lim, csd_noise, reg=1)
-con_signal = dics_connectivity(pairs, fwd_lim, csd_signal, reg=1)
+con_noise = dics_connectivity(pairs, fwd_lim, csd_noise)
+con_signal = dics_connectivity(pairs, fwd_lim, csd_signal)
 con_contrast = con_signal - con_noise
 
-# Create a cortical map, where the "signal" at each point is the sum of the
-# coherence of all outgoing and incoming connections from and to that point.
-all_to_all = con_contrast.make_stc('sum', weight_by_degree=True)
+# Create a cortical map, where the "signal" at each point is the maximum
+# coherence across all outgoing and incoming connections from and to that
+# point.
+all_to_all = con_contrast.make_stc('absmax')
 
 brain = all_to_all.plot('sample', subjects_dir=subjects_dir, hemi='both',
                         figure=6, size=400)
+brain.scale_data_colormap(0.5, 0.8, 1, True, center=0)
 
 # Indicate the true locations of the source activity on the plot.
 brain.add_foci(source_vert1, coords_as_verts=True, hemi='lh')

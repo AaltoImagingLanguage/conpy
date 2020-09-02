@@ -408,6 +408,10 @@ class VertexConnectivity(_BaseConnectivity):
                         connections for each source.
                 'degree': count the number of incoming and outgoing
                           connections for each source.
+                'absmax' : show the strongest coherence across both incomoing
+                           and outgoing connections at each source. In this
+                           setting, the ``weight_by_degree`` parameter is
+                           ignored.
 
             Defaults to ``'sum'``.
 
@@ -433,15 +437,24 @@ class VertexConnectivity(_BaseConnectivity):
 
         elif summary == 'sum':
             A = self.get_adjacency()
+            data = A.sum(axis=0).T + A.sum(axis=1)
+            vertices = self.vertices
+
+            # These are needed later in order to weight by degree
             vert_inds = np.arange(len(self.vertices[0]) +
                                   len(self.vertices[1]))
-            vertices = self.vertices
-            data = A.sum(axis=0).T + A.sum(axis=1)
 
             # For undirected connectivity objects, all connections have been
             # counted twice.
             if not self.directed:
                 data = data / 2.
+
+        elif summary == 'absmax':
+            A = self.get_adjacency()
+            in_max = A.max(axis=0).toarray().ravel()
+            out_max = A.max(axis=1).toarray().ravel()
+            data = np.maximum(in_max, out_max)
+            vertices = self.vertices
 
         else:
             raise ValueError('The summary parameter must be "degree", or '
@@ -449,7 +462,7 @@ class VertexConnectivity(_BaseConnectivity):
 
         data = np.asarray(data, dtype=np.float).ravel()
 
-        if weight_by_degree:
+        if weight_by_degree and summary != 'absmax':
             degree = self.source_degree[:, vert_inds].sum(axis=0)
             # Prevent division by zero
             zero_mask = degree == 0
