@@ -401,7 +401,7 @@ class VertexConnectivity(_BaseConnectivity):
 
         Parameters
         ----------
-        summary : 'degree' | 'mean'
+        summary : 'sum' | 'degree' | 'absmax'
             How to summarize the adjacency data:
 
                 'sum' : sum the strenghts of both the incoming and outgoing
