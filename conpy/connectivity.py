@@ -458,7 +458,7 @@ class VertexConnectivity(_BaseConnectivity):
 
         else:
             raise ValueError('The summary parameter must be "degree", or '
-                             '"sum".')
+                             '"sum", or "absmax".')
 
         data = np.asarray(data, dtype=np.float).ravel()
 

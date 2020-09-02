@@ -10,3 +10,5 @@ from .connectivity import (all_to_all_connectivity_pairs,
 from .stats import (group_connectivity_ttest, cluster_threshold,
                     cluster_permutation_test)
 from . import utils
+
+__version__ = '1.1'
