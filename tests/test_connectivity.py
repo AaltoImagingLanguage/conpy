@@ -108,7 +108,7 @@ def _simulate_data(fwd_fixed, source_vertno1, source_vertno2):
 
     # Define a single epoch
     epochs = mne.Epochs(raw, np.array([[0, 0, 1]]), event_id=1, tmin=0,
-                        tmax=raw.times[-1], preload=True)
+                        tmax=raw.times[-1], preload=True, baseline=(0, 0))
 
     # Compute the cross-spectral density matrix
     csd = csd_morlet(epochs, frequencies=[10, 20])

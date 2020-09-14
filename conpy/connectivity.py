@@ -664,7 +664,7 @@ class VertexConnectivity(_BaseConnectivity):
         if self.subject is None:
             raise ValueError('con.subject must be set')
 
-        src_orig = _ensure_src(src_orig, kind='surf')
+        src_orig = _ensure_src(src_orig, kind='surface')
         subject_orig = _ensure_src_subject(src_orig, subject_orig)
 
         data_idx, vertices = _get_morph_src_reordering(
