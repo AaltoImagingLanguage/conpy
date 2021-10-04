@@ -336,11 +336,11 @@ def _compute_degree(pairs, n_sources):
     in_degree : ndarray, shape (n_sources,)
         The number of incoming connections for each source.
     """
-    out_degree = np.zeros(n_sources, dtype=np.int)
+    out_degree = np.zeros(n_sources, dtype=int)
     ind, degree = np.unique(pairs[0], return_counts=True)
     out_degree[ind] = degree
 
-    in_degree = np.zeros(n_sources, dtype=np.int)
+    in_degree = np.zeros(n_sources, dtype=int)
     ind, degree = np.unique(pairs[1], return_counts=True)
     in_degree[ind] = degree
 
@@ -555,7 +555,7 @@ class VertexConnectivity(_BaseConnectivity):
 
         logger.info('Computing out- and in-degree for each label...')
         n_labels = len(labels)
-        label_degree = np.zeros((2, n_labels), dtype=np.int)
+        label_degree = np.zeros((2, n_labels), dtype=int)
         for i, label in enumerate(labels):
             vert_ind = _get_vert_ind_from_label(self.vertices, label)
             label_degree[:, i] = self.source_degree[:, vert_ind].sum(axis=1)
