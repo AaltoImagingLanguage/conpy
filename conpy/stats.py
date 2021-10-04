@@ -250,6 +250,10 @@ def cluster_permutation_test(cond1, cond2, cluster_threshold, src, alpha=0.05,
             raise ValueError('Not all Connectivity objects have the same '
                              'connection pairs defined.')
 
+    if tail not in [-1, 0, 1]:
+        raise ValueError('The `tail` parameter should be -1, 0, or 1, but the '
+                         'value {} was supplied'.format(tail))
+
     # Create pairwise contrast. We'll do a t-test against the null hypothesis
     # that the mean of this contrast is zero. This is equivalent to a paired
     # t-test.
@@ -379,8 +383,10 @@ def _do_single_permutation(Xs, cluster_threshold, tail, grid_points,
         masks = [t < -cluster_threshold]
     elif tail == 0:
         masks = [t < -cluster_threshold, t >= cluster_threshold]
-    if tail == 1:
+    elif tail == 1:
         masks = [t >= cluster_threshold]
+    else:
+        raise ValueError('Invalid value for the `tail` parameter.')
 
     for mask in masks:
         n_connections = mask.sum()
