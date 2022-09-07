@@ -16,11 +16,11 @@ from mne import (Forward, SourceSpaces, Label, BiHemiLabel,
                  pick_channels_forward)
 from mne.utils import logger, verbose, copy_function_doc_to_method_doc
 from mne.parallel import parallel_func
-from mne.externals.h5io import read_hdf5, write_hdf5
 from mne.source_estimate import _make_stc
 from mne.source_space import (_ensure_src, _get_morph_src_reordering,
                               _ensure_src_subject)
 from mne.time_frequency import pick_channels_csd
+from h5io import read_hdf5, write_hdf5
 
 from .forward import forward_to_tangential
 from .viz import plot_connectivity

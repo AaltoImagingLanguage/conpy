@@ -7,7 +7,8 @@ Authors: Susanna Aro <susanna.aro@aalto.fi>
 """
 import numpy as np
 
-from mne.viz.circle import plot_connectivity_circle, circular_layout
+from mne.viz.circle import circular_layout
+from mne_connectivity.viz import plot_connectivity_circle
 
 
 def plot_connectivity(con, n_lines=None, node_angles=None, node_width=None,

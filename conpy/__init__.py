@@ -11,4 +11,4 @@ from .stats import (group_connectivity_ttest, cluster_threshold,
                     cluster_permutation_test)
 from . import utils
 
-__version__ = '1.1'
+__version__ = '1.3'

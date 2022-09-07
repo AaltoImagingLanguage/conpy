@@ -9,6 +9,7 @@ mne>=0.16
 scipy>=0.19
 tqdm
 h5py
+h5io
 pyqt5
 pytest>=3.2
 sphinx

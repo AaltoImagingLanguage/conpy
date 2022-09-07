@@ -14,7 +14,7 @@ if __name__ == "__main__":
         description='Functions and classes for performing connectivity analysis on MEG data.',
         license='BSD-3',
         url='https://github.com/aaltoimaginglanguage/conpy',
-        version='1.2',
+        version='1.3',
         download_url='https://github.com/aaltoimaginglanguage/conpy/archive/master.zip',
         long_description=codecs.open('README.md', encoding='utf8').read(),
         classifiers=['Intended Audience :: Science/Research',
