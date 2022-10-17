@@ -33,7 +33,6 @@ considerations, which are discussed in [3]_.
 import os.path as op
 import numpy as np
 from scipy.signal import welch, coherence
-from mayavi import mlab
 from matplotlib import pyplot as plt
 
 # The conpy package implements DICS connectivity
@@ -51,7 +50,7 @@ from mne.beamformer import make_dics, apply_dics_csd
 mne.set_log_level('ERROR')
 
 # We use the MEG and MRI setup from the MNE-sample dataset
-data_path = sample.data_path(download=False)
+data_path = sample.data_path(download=True)
 subjects_dir = op.join(data_path, 'subjects')
 mri_path = op.join(subjects_dir, 'sample')
 
@@ -61,7 +60,7 @@ trans_fname = op.join(meg_path, 'sample_audvis_raw-trans.fif')
 fwd_fname = op.join(meg_path, 'sample_audvis-meg-eeg-oct-6-fwd.fif')
 
 # Later on, we'll use the forward model defined in the MNE-testing dataset
-testing_path = op.join(testing.data_path(download=False), 'MEG', 'sample')
+testing_path = op.join(testing.data_path(download=True), 'MEG', 'sample')
 fwd_lim_fname = op.join(testing_path,
                         'sample_audvis_trunc-meg-eeg-oct-4-fwd.fif')
 
@@ -180,7 +179,7 @@ fwd = mne.pick_types_forward(fwd, meg='grad', eeg=False, exclude='bads')
 # Create an info object that holds information about the sensors (their
 # location, etc.).
 info = mne.create_info(fwd['info']['ch_names'], sfreq, ch_types='grad')
-info.update(fwd['info'])
+info = mne.io.Info({**info, **fwd['info']})
 
 # To simulate the data, we need a version of the forward solution where each
 # source has a "fixed" orientation, i.e. pointing orthogonally to the surface
@@ -217,7 +216,7 @@ epochs = mne.EpochsArray(
 )
 
 # Plot the simulated data
-epochs.plot()
+# epochs.plot()
 
 ###############################################################################
 # Power mapping
@@ -243,15 +242,15 @@ s = apply_inverse(epochs['signal'].average(), inv)
 # Take the root-mean square along the time dimension and plot the result.
 s_rms = (s ** 2).mean()
 brain = s_rms.plot('sample', subjects_dir=subjects_dir, hemi='both', figure=1,
-                   size=400)
+                   time_viewer=False, size=400,
+                   title='MNE-dSPM inverse (RMS)')
 
 # Indicate the true locations of the source activity on the plot.
 brain.add_foci(source_vert1, coords_as_verts=True, hemi='lh')
 brain.add_foci(source_vert2, coords_as_verts=True, hemi='rh')
 
 # Rotate the view and add a title.
-mlab.view(0, 0, 550, [0, 0, 0])
-mlab.title('MNE-dSPM inverse (RMS)', height=0.9)
+brain.show_view(azimuth=0, elevation=0, distance=550, focalpoint=(0, 0, 0))
 
 ###############################################################################
 # Computing a cortical power map at 10 Hz. using a DICS beamformer:
@@ -267,15 +266,15 @@ power, f = apply_dics_csd(csd_signal, filters)
 
 # Plot the DICS power map.
 brain = power.plot('sample', subjects_dir=subjects_dir, hemi='both', figure=2,
-                   size=400)
+                   time_viewer=False, size=400,
+                   title=f'DICS power map at {f[0]:.1f} Hz')
 
 # Indicate the true locations of the source activity on the plot.
 brain.add_foci(source_vert1, coords_as_verts=True, hemi='lh')
 brain.add_foci(source_vert2, coords_as_verts=True, hemi='rh')
 
 # Rotate the view and add a title.
-mlab.view(0, 0, 550, [0, 0, 0])
-mlab.title('DICS power map at %.1f Hz' % f[0], height=0.9)
+brain.show_view(azimuth=0, elevation=0, distance=550, focalpoint=(0, 0, 0))
 
 ###############################################################################
 # Excellent! Both methods found our two simulated sources. Of course, with a
@@ -310,7 +309,8 @@ one_to_all = con.make_stc('sum', weight_by_degree=True)
 
 # Plot the coherence values on the cortex
 brain = one_to_all.plot('sample', subjects_dir=subjects_dir, hemi='both',
-                        figure=3, size=400)
+                        figure=3, size=400, time_viewer=False,
+                        title='One-to-all coherence')
 
 # Indicate the true locations of the source activity on the plot (in white)
 brain.add_foci(source_vert1, coords_as_verts=True, hemi='lh')
@@ -327,9 +327,8 @@ else:
     ref_vert = power.vertices[1][ref_point - n_lh_verts]
 brain.add_foci(ref_vert, coords_as_verts=True, hemi=hemi, color=(1, 0, 0))
 
-# Rotate the view and add a title.
-mlab.view(0, 0, 550, [0, 0, 0])
-mlab.title('One-to-all coherence', height=0.9)
+# Rotate the view
+brain.show_view(azimuth=0, elevation=0, distance=550, focalpoint=(0, 0, 0))
 
 ###############################################################################
 # We see a lot of coherence in the neighbourhood surrounding the reference
@@ -344,7 +343,8 @@ one_to_all_noise = con_noise.make_stc('sum', weight_by_degree=True)
 
 # Plot the coherence values on the cortex
 brain = one_to_all_noise.plot('sample', subjects_dir=subjects_dir, hemi='both',
-                              figure=4, size=400)
+                              figure=4, size=400, time_viewer=False,
+                              title='One-to-all coherence (noise)')
 
 # Indicate the true locations of the source activity on the plot (in white)
 brain.add_foci(source_vert1, coords_as_verts=True, hemi='lh')
@@ -353,9 +353,8 @@ brain.add_foci(source_vert2, coords_as_verts=True, hemi='rh')
 # Also indicate our chosen reference point (in red).
 brain.add_foci(ref_vert, coords_as_verts=True, hemi=hemi, color=(1, 0, 0))
 
-# Rotate the view and add a title.
-mlab.view(0, 0, 550, [0, 0, 0])
-mlab.title('One-to-all coherence (noise)', height=0.9)
+# Rotate the view
+brain.show_view(azimuth=0, elevation=0, distance=550, focalpoint=(0, 0, 0))
 
 ###############################################################################
 # While we no longer find a local maximum at the first source, we still see
@@ -370,7 +369,9 @@ one_to_all_contrast = one_to_all - one_to_all_noise
 
 # Plot the coherence values on the cortex
 brain = one_to_all_contrast.plot('sample', subjects_dir=subjects_dir,
-                                 hemi='both', figure=5, size=400)
+                                 hemi='both', figure=5, size=400,
+                                 time_viewer=False,
+                                 title='One-to-all coherence (contrast)')
 
 # Indicate the true locations of the source activity on the plot (in white)
 brain.add_foci(source_vert1, coords_as_verts=True, hemi='lh')
@@ -379,9 +380,8 @@ brain.add_foci(source_vert2, coords_as_verts=True, hemi='rh')
 # Also indicate our chosen reference point (in red).
 brain.add_foci(ref_vert, coords_as_verts=True, hemi=hemi, color=(1, 0, 0))
 
-# Rotate the view and add a title.
-mlab.view(0, 0, 550, [0, 0, 0])
-mlab.title('One-to-all coherence (contrast)', height=0.9)
+# Rotate the view
+brain.show_view(azimuth=0, elevation=0, distance=550, focalpoint=(0, 0, 0))
 
 ###############################################################################
 # We now see the areas that have more coherence with the reference point during
@@ -430,16 +430,16 @@ con_contrast = con_signal - con_noise
 all_to_all = con_contrast.make_stc('absmax')
 
 brain = all_to_all.plot('sample', subjects_dir=subjects_dir, hemi='both',
-                        figure=6, size=400)
-brain.scale_data_colormap(0.5, 0.8, 1, True, center=0)
+                        figure=6, size=400, time_viewer=False,
+                        clim=dict(kind='value', lims=(0.5, 0.8, 1)),
+                        title='All-to-all coherence (contrast)')
 
 # Indicate the true locations of the source activity on the plot.
 brain.add_foci(source_vert1, coords_as_verts=True, hemi='lh')
 brain.add_foci(source_vert2, coords_as_verts=True, hemi='rh')
 
-# Rotate the view and add a title.
-mlab.view(0, 0, 550, [0, 0, 0])
-mlab.title('All-to-all coherence (contrast)', height=0.9)
+# Rotate the view
+brain.show_view(azimuth=0, elevation=0, distance=550, focalpoint=(0, 0, 0))
 
 # Annotate the cortex with parcels from the "aparc" brain atlas provided by
 # FreeSurfer. This is to cross reference this plot with the connectivity
