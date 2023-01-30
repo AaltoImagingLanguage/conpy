@@ -3,7 +3,6 @@ numpydoc>=0.7
 numpy>=1.13
 doit>=0.30
 setuptools>=36.5
-mayavi>=4.5
 matplotlib>=1.5
 mne>=0.16
 scipy>=0.19
