@@ -45,6 +45,10 @@ else:
 
 # For BLAS to use the right amount of cores
 os.environ['OMP_NUM_THREADS'] = str(n_jobs)
+os.environ['MKL_NUM_THREADS'] = str(n_jobs)
+os.environ['NUMEXPR_NUM_THREADS'] = str(n_jobs)
+os.environ['OPENBLAS_NUM_THREADS'] = str(n_jobs)
+os.environ['VECLIB_MAXIMUM_THREADS'] = str(n_jobs)
 
 
 ###############################################################################
