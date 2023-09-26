@@ -36,7 +36,7 @@ SUBJECT=${SUBJECTS[$SLURM_ARRAY_TASK_ID - 1]}
 LOG_FILE=logs/$SUBJECT-forward.log
 
 # Load the python environment
-module load anaconda3
+module load anaconda
 module load mesa
 
 # Tell BLAS to only use a single thread

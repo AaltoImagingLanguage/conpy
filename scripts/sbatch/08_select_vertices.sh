@@ -9,7 +9,7 @@
 LOG_FILE=logs/select_vertices.log
 
 # Load the python environment
-module load anaconda3
+module load anaconda
 module load mesa
 
 # Tell BLAS to only use a single thread

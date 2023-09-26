@@ -23,7 +23,7 @@ if user == 'rodin':
     # My laptop
     study_path = '/Volumes/scratch/nbe/conpy'
     n_jobs = 4
-elif host == 'nbe-024.org.aalto.fi' and user == 'vanvlm1':
+elif host == 'd22-0025.org.aalto.fi' and user == 'vanvlm1':
     # My workstation
     study_path = '/m/nbe/scratch/conpy'
     n_jobs = 8
@@ -51,9 +51,8 @@ os.environ['OMP_NUM_THREADS'] = str(n_jobs)
 # These are all the relevant parameters for the analysis. You can experiment
 # with changing these.
 
-# Band-pass filter limits. Since we are performing ICA on the continuous data,
-# it is important that the lower bound is at least 1Hz.
-bandpass_fmin = 1  # Hz
+# Band-pass filter limits.
+bandpass_fmin = 0.05  # Hz
 bandpass_fmax = 40  # Hz
 
 # Maximum number of ICA components to reject
@@ -167,6 +166,7 @@ fname.add('archive_dir', '{study_path}/archive')
 fname.add('meg_dir', '{study_path}/MEG')
 fname.add('subjects_dir', '{study_path}/subjects')
 fname.add('subject_dir', '{meg_dir}/{subject}')
+fname.add('stimuli_dir', '../stimuli/')
 
 # URLs and filenames for the original openfmri ds117 files
 fname.add('ds117_url', 'http://openfmri.s3.amazonaws.com/tarballs')
@@ -181,6 +181,7 @@ fname.add('ds117_dir', '{study_path}/ds117/{subject}')
 fname.add('raw', '{ds117_dir}/MEG/run_{run:02d}_raw.fif')
 fname.add('sss', '{ds117_dir}/MEG/run_{run:02d}_sss.fif')
 fname.add('trans', '{ds117_dir}/MEG/{subject}-trans.fif')
+fname.add('events', '{ds117_dir}/MEG/{subject}_{run:d}.txt')
 
 # Directories related to FreeSurfer files
 fname.add('t1', '{ds117_dir}/anatomy/highres001.nii.gz')
@@ -214,6 +215,7 @@ fname.add('fsaverage_src', '{subjects_dir}/fsaverage/fsaverage-{sp}-src.fif')
 fname.add('fwd', '{subject_dir}/fsaverage_to_{subject}-meg-{sp}-fwd.fif')
 fname.add('fwd_r', '{subject_dir}/{subject}-restricted-meg-{sp}-fwd.fif')
 fname.add('pairs', '{meg_dir}/pairs.npy')
+fname.add('embeddings', '{stimuli_dir}/embeddings.npz')
 
 # Filenames for MNE reports
 fname.add('reports_dir', '{study_path}/reports/')
