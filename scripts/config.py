@@ -51,8 +51,9 @@ os.environ['OMP_NUM_THREADS'] = str(n_jobs)
 # These are all the relevant parameters for the analysis. You can experiment
 # with changing these.
 
-# Band-pass filter limits.
-bandpass_fmin = 0.05  # Hz
+# Band-pass filter limits. Since we are performing ICA on the continuous data,
+# it is important that the lower bound is at least 1Hz.
+bandpass_fmin = 1  # Hz
 bandpass_fmax = 40  # Hz
 
 # Maximum number of ICA components to reject
