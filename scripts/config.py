@@ -138,7 +138,7 @@ map_subjects = {
 }
 
 # For these, no forward operator was computed in the MNE-Python pipeline
-bad_subjects = ['sub001', 'sub005', 'sub016']
+bad_subjects = ['sub005', 'sub016']
 
 # All "good" subjects
 subjects = [s for s in sorted(map_subjects.keys()) if s not in bad_subjects]
@@ -220,7 +220,7 @@ fname.add('fsaverage_src', '{subjects_dir}/fsaverage/fsaverage-{sp}-src.fif')
 fname.add('fwd', '{subject_dir}/fsaverage_to_{subject}-meg-{sp}-fwd.fif')
 fname.add('fwd_r', '{subject_dir}/{subject}-restricted-meg-{sp}-fwd.fif')
 fname.add('pairs', '{meg_dir}/pairs.npy')
-fname.add('embeddings', '{stimuli_dir}/embeddings.npz')
+fname.add('embeddings', '{stimuli_dir}/facenet_embeddings.npz')
 
 # Filenames for MNE reports
 fname.add('reports_dir', '{study_path}/reports/')

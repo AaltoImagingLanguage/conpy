@@ -61,16 +61,16 @@ for run in range(1, 7):
 
 # Append PDF plots to report
 with mne.open_report(fname.report(subject=subject)) as report:
-    report.add_slider_to_section(
+    report.add_figure(
         figs_before,
-        ['PSD before filtering: run %d' % i for i in range(1, 7)],
+        caption=['PSD before filtering: run %d' % i for i in range(1, 7)],
         title='PSD before filtering',
         section='Sensor-level',
         replace=True
     )
-    report.add_slider_to_section(
+    report.add_figure(
         figs_after,
-        ['PSD after filtering: run %d' % i for i in range(1, 7)],
+        caption=['PSD after filtering: run %d' % i for i in range(1, 7)],
         title='PSD after filtering',
         section='Sensor-level',
         replace=True

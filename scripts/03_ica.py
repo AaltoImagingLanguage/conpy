@@ -81,17 +81,17 @@ ica.save(fname.ica(subject=subject))
 # Save plots of the ICA components to the report
 figs = ica.plot_components(show=False)
 with mne.open_report(fname.report(subject=subject)) as report:
-    report.add_slider_to_section(
+    report.add_figure(
         figs,
-        ['ICA components %d' % i for i in range(len(figs))],
+        caption=['ICA components %d' % i for i in range(len(figs))],
         title='ICA components',
         section='Sensor-level',
         replace=True
     )
-    report.add_figs_to_section(
+    report.add_figure(
         [ica.plot_scores(ecg_scores, show=False),
          ica.plot_scores(eog_scores, show=False)],
-        ['Component correlation with ECG', 'Component correlation with EOG'],
+        caption=['Component correlation with ECG', 'Component correlation with EOG'],
         section='Sensor-level',
         replace=True
     )

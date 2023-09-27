@@ -71,7 +71,11 @@ with mne.open_report(fname.report(subject=subject)) as report:
     adj = (cons[conditions[0]] - cons[conditions[1]]).get_adjacency()
     fig = plt.figure()
     plt.imshow(adj.toarray(), interpolation='nearest')
-    report.add_figs_to_section(fig, ['Adjacency matrix'],
-                               section='Source-level', replace=True)
+    report.add_figure(
+        fig,
+        title='Adjacency matrix',
+        section='Source-level',
+        replace=True
+    )
     report.save(fname.report_html(subject=subject), overwrite=True,
                 open_browser=False)

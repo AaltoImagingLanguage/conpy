@@ -48,9 +48,12 @@ for condition in conditions:
 
     # Save the CSD matrices
     csd.save(fname.csd(condition=condition, subject=subject))
-    report.add_figs_to_section(csd.plot(show=False),
-                               ['CSD for %s' % condition],
-                               section='Sensor-level', replace=True)
+    report.add_figure(
+        csd.plot(show=False),
+        title=f'CSD for {condition}',
+        section='Sensor-level',
+        replace=True
+    )
 
 # Also compute the CSD for the baseline period (use all epochs for this,
 # regardless of condition). This way, we can compare the change in power caused
@@ -59,8 +62,12 @@ epochs = epochs.apply_baseline((-0.2, 0))  # Make sure data is zero-mean
 csd_baseline = csd_morlet(epochs, frequencies=frequencies, tmin=-0.2, tmax=0,
                           decim=20, n_jobs=n_jobs, verbose=True)
 csd_baseline.save(fname.csd(condition='baseline', subject=subject))
-report.add_figs_to_section(csd_baseline.plot(show=False), ['CSD for baseline'],
-                           section='Sensor-level', replace=True)
+report.add_figure(
+    csd_baseline.plot(show=False),
+    title='CSD for baseline',
+    section='Sensor-level',
+    replace=True
+)
 
 # Save the report as HDF5 for later loading (in many other script, the report
 # is loaded with a context manager, which takes care of this automatically, but

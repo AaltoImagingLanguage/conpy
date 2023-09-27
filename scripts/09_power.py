@@ -72,9 +72,9 @@ for i, freq in enumerate(freq_bands):
     figs.append(fig)
 
 with mne.open_report(fname.report(subject=subject)) as report:
-    report.add_slider_to_section(
+    report.add_figure(
         figs,
-        ['%s-%s Hz' % freq for freq in freq_bands],
+        caption=['%s-%s Hz' % freq for freq in freq_bands],
         title='Power contrast',
         section='Source-level',
         replace=True

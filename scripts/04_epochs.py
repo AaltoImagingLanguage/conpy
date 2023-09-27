@@ -48,30 +48,31 @@ epochs = mne.Epochs(raw, events, events_id, epoch_tmin, epoch_tmax,
 
 # Save evoked plot to the report
 with mne.open_report(fname.report(subject=subject)) as report:
-    report.add_figs_to_section(
-        [epochs.average().plot(show=False)],
-        ['Evoked without ICA'],
+    report.add_figure(
+        epochs.average().plot(show=False),
+        title='Evoked without ICA',
         section='Sensor-level',
         replace=True
     )
-    report.save(fname.report_html(subject=subject), overwrite=True)
+    report.save(fname.report_html(subject=subject), overwrite=True,
+                open_browser=False)
 
 # Apply ICA to the epochs, dropping components that correlate with ECG and EOG
 ica.apply(epochs)
 
 # Drop epochs that have too large signals (most likely due to the subject
 # moving or muscle artifacts)
-epochs.drop_bad(reject)
-print('  Dropped %0.1f%% of epochs' % (epochs.drop_log_stats(),))
+#epochs.drop_bad(reject)
+#print('  Dropped %0.1f%% of epochs' % (epochs.drop_log_stats(),))
 
 print('  Writing to disk')
-epochs.save(fname.epo(subject=subject))
+epochs.save(fname.epo(subject=subject), overwrite=True)
 
 # Save evoked plot to report
 with mne.open_report(fname.report(subject=subject)) as report:
-    report.add_figs_to_section(
-        [epochs.average().plot(show=False)],
-        ['Evoked with ICA'],
+    report.add_figure(
+        epochs.average().plot(show=False),
+        title='Evoked with ICA',
         section='Sensor-level',
         replace=True
     )

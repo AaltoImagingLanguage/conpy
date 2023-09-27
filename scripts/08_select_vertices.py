@@ -61,9 +61,9 @@ for fwd, vert_ind, subject in zip(fwds, vert_inds, subjects):
         g = fig.children[-1].children[0].children[0].glyph.glyph
         g.scale_factor = 0.008
         mlab.view(135, 120, 0.3, [0.01, 0.015, 0.058])
-        report.add_figs_to_section(
-            [fig],
-            ['Selected sources'],
+        report.add_figure(
+            fig,
+            title='Selected sources',
             section='Source-level',
             replace=True
         )

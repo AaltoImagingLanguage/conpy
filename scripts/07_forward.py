@@ -58,9 +58,9 @@ with mne.open_report(fname.report(subject=subject)) as report:
     fig.scene.background = (1, 1, 1)  # white
     fig.children[-1].children[0].children[0].glyph.glyph.scale_factor = 0.008
     mlab.view(135, 120, 0.3, [0.01, 0.015, 0.058])
-    report.add_figs_to_section(
-        [fig],
-        ['Forward model'],
+    report.add_figure(
+        fig,
+        title='Forward model',
         section='Source-level',
         replace=True
     )
