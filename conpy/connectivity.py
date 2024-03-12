@@ -17,8 +17,8 @@ from mne import (Forward, SourceSpaces, Label, BiHemiLabel,
 from mne.utils import logger, verbose, copy_function_doc_to_method_doc
 from mne.parallel import parallel_func
 from mne.source_estimate import _make_stc
-from mne.source_space import (_ensure_src, _get_morph_src_reordering,
-                              _ensure_src_subject)
+from mne.source_space._source_space import (_ensure_src, _get_morph_src_reordering,
+                                            _ensure_src_subject)
 from mne.time_frequency import pick_channels_csd
 from h5io import read_hdf5, write_hdf5
 
@@ -272,7 +272,7 @@ class _BaseConnectivity(object):
     def __div__(self, other):  # noqa: D105
         con = self.copy()
         # Always use floating point for division
-        con.data = con.data.astype(np.float)
+        con.data = con.data.astype('float')
         return con.__idiv__(other)
 
     def __truediv__(self, other):  # noqa: D105
@@ -281,7 +281,7 @@ class _BaseConnectivity(object):
     def __itruediv__(self, other):  # noqa: D105
         con = self.copy()
         # Always use floating point for division
-        con.data = con.data.astype(np.float)
+        con.data = con.data.astype('float')
         return con.__idiv__(other)
 
     def __imul__(self, other):  # noqa: D105
@@ -460,7 +460,7 @@ class VertexConnectivity(_BaseConnectivity):
             raise ValueError('The summary parameter must be "degree", or '
                              '"sum", or "absmax".')
 
-        data = np.asarray(data, dtype=np.float).ravel()
+        data = np.asarray(data, dtype='float').ravel()
 
         if weight_by_degree and summary != 'absmax':
             degree = self.source_degree[:, vert_inds].sum(axis=0)

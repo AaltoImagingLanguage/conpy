@@ -9,11 +9,11 @@ from copy import deepcopy
 
 import numpy as np
 from scipy.spatial import cKDTree
-from mne import SourceSpaces, Forward
+from mne import SourceSpaces, Forward, channel_type
 from mne.forward import convert_forward_solution
 from mne.transforms import (_ensure_trans, apply_trans, _cart_to_sph,
                             Transform, invert_transform, read_trans)
-from mne.io.pick import channel_type, pick_types
+from mne._fiff.pick import _picks_to_idx
 from mne.bem import _fit_sphere
 from mne.io.constants import FIFF
 # from mne.externals.six import string_types
@@ -103,15 +103,18 @@ def select_vertices_in_sensor_range(inst, dist, info=None, picks=None,
     dev_to_head = _ensure_trans(info['dev_head_t'], 'meg', 'head')
 
     if picks is None:
-        picks = pick_types(info, meg=True)
+        try:
+            picks = _picks_to_idx(info, 'meg')
+        except ValueError:
+            picks = []
         if len(picks) > 0:
             logger.info('Using MEG channels')
         else:
             logger.info('Using EEG channels')
-            picks = pick_types(info, eeg=True)
+            picks = _picks_to_idx(info, 'eeg')
 
     src_pos = np.vstack([
-        apply_trans(src_trans, s['rr'][s['inuse'].astype(np.bool)])
+        apply_trans(src_trans, s['rr'][s['inuse'].astype('bool')])
         for s in src
     ])
 

@@ -4,8 +4,8 @@ Author: Marijn van Vliet <w.m.vanvliet@gmail.com>
 """
 import operator
 import numpy as np
-from mne.source_space import (_ensure_src, _get_morph_src_reordering,
-                              _ensure_src_subject, SourceSpaces)
+from mne.source_space._source_space import (_ensure_src, _get_morph_src_reordering,
+                                            _ensure_src_subject, SourceSpaces)
 from mne.utils import warn, get_subjects_dir
 
 try:
