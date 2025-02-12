@@ -1,28 +1,25 @@
 name: conpy
 channels:
-- defaults
+- conda-forge
 dependencies:
-- python=3.7
-- pip
-- numpy
-- numpydoc
-- scipy
-- matplotlib
-- vtk
+- python>=3.11
+- h5io
+- h5py
 - ipython
 - jupyter
-- h5py
-- pyqt
+- matplotlib
+- mne
+- numpy
+- numpydoc
+- pip
+- pyside6
 - pytest
 - pytest-cov
-- tqdm
+- scipy
 - sphinx
-- pip:
-  - mne
-  - traits
-  - traitsui
-  - pyface
-  - mayavi
-  - pysurfer
-  - sphinx_gallery
-  - sphinx_bootstrap_theme
+- sphinx_bootstrap_theme
+- sphinx_gallery
+- tqdm
+- traits
+- traitsui
+- vtk

@@ -1,30 +1,31 @@
 # -*- coding: utf-8 -*-
-"""
-Connectivity analysis using Dynamic Imaging of Coherent Sources (DICS).
+"""Connectivity analysis using Dynamic Imaging of Coherent Sources (DICS).
 
 Authors: Susanna Aro <susanna.aro@aalto.fi>
          Marijn van Vliet <w.m.vanvliet@gmail.com>
 """
-import types
+
 import copy
+import types
 
 import numpy as np
-from scipy.spatial.distance import pdist, cdist
-from scipy import sparse
-
-from mne import (Forward, SourceSpaces, Label, BiHemiLabel,
-                 pick_channels_forward)
-from mne.utils import logger, verbose, copy_function_doc_to_method_doc
+from h5io import read_hdf5, write_hdf5
+from mne import BiHemiLabel, Forward, Label, SourceSpaces, pick_channels_forward
 from mne.parallel import parallel_func
 from mne.source_estimate import _make_stc
-from mne.source_space._source_space import (_ensure_src, _get_morph_src_reordering,
-                                            _ensure_src_subject)
+from mne.source_space._source_space import (
+    _ensure_src,
+    _ensure_src_subject,
+    _get_morph_src_reordering,
+)
 from mne.time_frequency import pick_channels_csd
-from h5io import read_hdf5, write_hdf5
+from mne.utils import copy_function_doc_to_method_doc, logger, verbose
+from scipy import sparse
+from scipy.spatial.distance import cdist, pdist
 
 from .forward import forward_to_tangential
-from .viz import plot_connectivity
 from .utils import reg_pinv
+from .viz import plot_connectivity
 
 
 class _BaseConnectivity(object):
@@ -63,17 +64,22 @@ class _BaseConnectivity(object):
         The number of connections.
     """
 
-    def __init__(self, data, pairs, n_sources, source_degree=None,
-                 subject=None, directed=False):
+    def __init__(
+        self, data, pairs, n_sources, source_degree=None, subject=None, directed=False
+    ):
         self.data = np.asarray(data)
         pairs = np.asarray(pairs)
         if pairs.shape[1] != len(data):
-            raise ValueError('The number of pairs does not match the number '
-                             'of items in the data list.')
+            raise ValueError(
+                "The number of pairs does not match the number "
+                "of items in the data list."
+            )
 
         if pairs.shape[1] > 0 and n_sources < pairs.max():
-            raise ValueError('Pairs are defined between non-existent sources '
-                             '(n_sources=%d).' % n_sources)
+            raise ValueError(
+                "Pairs are defined between non-existent sources "
+                "(n_sources=%d)." % n_sources
+            )
 
         self.pairs = pairs
         self.n_sources = n_sources
@@ -83,16 +89,17 @@ class _BaseConnectivity(object):
         if source_degree is not None:
             source_degree = np.asarray(source_degree)
             if source_degree.shape[1] != n_sources:
-                raise ValueError('The length of the source_degree list does '
-                                 'not match the number of sources.')
+                raise ValueError(
+                    "The length of the source_degree list does "
+                    "not match the number of sources."
+                )
             self.source_degree = source_degree
         else:
             self.source_degree = np.asarray(_compute_degree(pairs, n_sources))
 
     def __repr__(self):
-        return u'<{}  |  n_sources={}, n_conns={}, subject={}>'.format(
-            self.__class__.__name__, self.n_sources, self.n_connections,
-            self.subject
+        return "<{}  |  n_sources={}, n_conns={}, subject={}>".format(
+            self.__class__.__name__, self.n_sources, self.n_connections, self.subject
         )
 
     @property
@@ -105,17 +112,17 @@ class _BaseConnectivity(object):
         return copy.deepcopy(self)
 
     def __setstate__(self, state):  # noqa: D105
-        self.data = state['data']
-        self.pairs = state['pairs']
-        self.n_sources = state['n_sources']
+        self.data = state["data"]
+        self.pairs = state["pairs"]
+        self.n_sources = state["n_sources"]
 
-        if 'source_degree' in state:
-            self.source_degree = state['source_degree']
+        if "source_degree" in state:
+            self.source_degree = state["source_degree"]
         else:
             self.source_degree = _compute_degree(self.pairs, self.n_sources)
 
-        self.subject = state['subject']
-        self.directed = state['directed']
+        self.subject = state["subject"]
+        self.directed = state["directed"]
 
     def __getstate__(self):  # noqa: D105
         return dict(
@@ -141,10 +148,10 @@ class _BaseConnectivity(object):
         --------
         read_connectivity : For reading connectivity objects from a file.
         """
-        if not fname.endswith('.h5'):
-            fname += '.h5'
+        if not fname.endswith(".h5"):
+            fname += ".h5"
 
-        write_hdf5(fname, self.__getstate__(), overwrite=True, title='conpy')
+        write_hdf5(fname, self.__getstate__(), overwrite=True, title="conpy")
 
     def get_adjacency(self):
         """Get a source-to-source adjacency matrix.
@@ -163,7 +170,7 @@ class _BaseConnectivity(object):
         else:
             return A + A.T
 
-    def threshold(self, thresh, crit=None, direction='above', copy=False):
+    def threshold(self, thresh, crit=None, direction="above", copy=False):
         """Threshold the connectivity.
 
         Only retain the connections which exceed a given threshold.
@@ -194,17 +201,20 @@ class _BaseConnectivity(object):
         if crit is None:
             crit = self.data
         elif len(crit) != self.n_connections:
-            raise ValueError('The number of items in `crit` does not match '
-                             'the number of connections.')
+            raise ValueError(
+                "The number of items in `crit` does not match "
+                "the number of connections."
+            )
 
         # Convert crit into a binary mask
-        if direction == 'above':
+        if direction == "above":
             mask = crit > thresh
-        elif direction == 'below':
+        elif direction == "below":
             mask = crit < thresh
         else:
-            raise ValueError('The direction parameter must be either "above" '
-                             'or "below".')
+            raise ValueError(
+                'The direction parameter must be either "above" ' 'or "below".'
+            )
 
         if copy:
             thresholded_con = self.copy()
@@ -223,8 +233,8 @@ class _BaseConnectivity(object):
 
         # Construct the fields for the newconnection object.
         state = self.__getstate__()
-        state['data'] = self.data[index]
-        state['pairs'] = self.pairs[:, index]
+        state["data"] = self.data[index]
+        state["pairs"] = self.pairs[:, index]
 
         # Set the fields of the new connection object
         con.__setstate__(state)
@@ -243,9 +253,9 @@ class _BaseConnectivity(object):
             Whether the given connectivity object is compatible with this one.
         """
         return (
-            isinstance(other, _BaseConnectivity) and
-            other.n_sources == self.n_sources and
-            np.array_equal(other.pairs, self.pairs)
+            isinstance(other, _BaseConnectivity)
+            and other.n_sources == self.n_sources
+            and np.array_equal(other.pairs, self.pairs)
         )
 
     def __iadd__(self, other):  # noqa: D105
@@ -272,7 +282,7 @@ class _BaseConnectivity(object):
     def __div__(self, other):  # noqa: D105
         con = self.copy()
         # Always use floating point for division
-        con.data = con.data.astype('float')
+        con.data = con.data.astype("float")
         return con.__idiv__(other)
 
     def __truediv__(self, other):  # noqa: D105
@@ -281,7 +291,7 @@ class _BaseConnectivity(object):
     def __itruediv__(self, other):  # noqa: D105
         con = self.copy()
         # Always use floating point for division
-        con.data = con.data.astype('float')
+        con.data = con.data.astype("float")
         return con.__idiv__(other)
 
     def __imul__(self, other):  # noqa: D105
@@ -301,7 +311,7 @@ class _BaseConnectivity(object):
         return self.copy().__ipow__(other)
 
     def __neg__(self):  # noqa: D105
-        self.data *= (-1)
+        self.data *= -1
         return self
 
     def __radd__(self, other):  # noqa: D105
@@ -383,20 +393,28 @@ class VertexConnectivity(_BaseConnectivity):
     n_sources : int
         The number of sources between possible connections were computed.
     """
-    def __init__(self, data, pairs, vertices, vertex_degree=None,
-                 subject=None, directed=False):
+
+    def __init__(
+        self, data, pairs, vertices, vertex_degree=None, subject=None, directed=False
+    ):
         if len(vertices) != 2:
-            raise ValueError('The `vertices` parameter should be a list of '
-                             'two arrays.')
+            raise ValueError(
+                "The `vertices` parameter should be a list of " "two arrays."
+            )
 
         self.vertices = [np.asarray(v) for v in vertices]
         n_vertices = len(self.vertices[0]) + len(self.vertices[1])
-        _BaseConnectivity.__init__(self, data=data, pairs=pairs,
-                                   n_sources=n_vertices,
-                                   source_degree=vertex_degree,
-                                   subject=subject, directed=directed)
+        _BaseConnectivity.__init__(
+            self,
+            data=data,
+            pairs=pairs,
+            n_sources=n_vertices,
+            source_degree=vertex_degree,
+            subject=subject,
+            directed=directed,
+        )
 
-    def make_stc(self, summary='sum', weight_by_degree=True):
+    def make_stc(self, summary="sum", weight_by_degree=True):
         """Obtain a summary of the connectivity as a SourceEstimate object.
 
         Parameters
@@ -425,31 +443,32 @@ class VertexConnectivity(_BaseConnectivity):
             The summary of the connectivity.
         """
         if self.vertices is None:
-            raise ValueError('Stc needs vertices!')
+            raise ValueError("Stc needs vertices!")
 
-        if summary == 'degree':
+        if summary == "degree":
             vert_inds, data = np.unique(self.pairs, return_counts=True)
 
             n_vert_lh = len(self.vertices[0])
             lh_inds = vert_inds < n_vert_lh
-            vertices = [self.vertices[0][vert_inds[lh_inds]],
-                        self.vertices[1][vert_inds[~lh_inds] - n_vert_lh]]
+            vertices = [
+                self.vertices[0][vert_inds[lh_inds]],
+                self.vertices[1][vert_inds[~lh_inds] - n_vert_lh],
+            ]
 
-        elif summary == 'sum':
+        elif summary == "sum":
             A = self.get_adjacency()
             data = A.sum(axis=0).T + A.sum(axis=1)
             vertices = self.vertices
 
             # These are needed later in order to weight by degree
-            vert_inds = np.arange(len(self.vertices[0]) +
-                                  len(self.vertices[1]))
+            vert_inds = np.arange(len(self.vertices[0]) + len(self.vertices[1]))
 
             # For undirected connectivity objects, all connections have been
             # counted twice.
             if not self.directed:
-                data = data / 2.
+                data = data / 2.0
 
-        elif summary == 'absmax':
+        elif summary == "absmax":
             A = self.get_adjacency()
             in_max = A.max(axis=0).toarray().ravel()
             out_max = A.max(axis=1).toarray().ravel()
@@ -457,24 +476,29 @@ class VertexConnectivity(_BaseConnectivity):
             vertices = self.vertices
 
         else:
-            raise ValueError('The summary parameter must be "degree", or '
-                             '"sum", or "absmax".')
+            raise ValueError(
+                'The summary parameter must be "degree", or ' '"sum", or "absmax".'
+            )
 
-        data = np.asarray(data, dtype='float').ravel()
+        data = np.asarray(data, dtype="float").ravel()
 
-        if weight_by_degree and summary != 'absmax':
+        if weight_by_degree and summary != "absmax":
             degree = self.source_degree[:, vert_inds].sum(axis=0)
             # Prevent division by zero
             zero_mask = degree == 0
             data[~zero_mask] /= degree[~zero_mask]
             data[zero_mask] = 0
 
-        return _make_stc(data[:, np.newaxis], vertices=vertices, tmin=0,
-                         tstep=1, subject=self.subject)
+        return _make_stc(
+            data[:, np.newaxis],
+            vertices=vertices,
+            tmin=0,
+            tstep=1,
+            subject=self.subject,
+        )
 
     @verbose
-    def parcellate(self, labels, summary='sum', weight_by_degree=True,
-                   verbose=None):
+    def parcellate(self, labels, summary="sum", weight_by_degree=True, verbose=None):
         """Get the connectivity parcellated according to the given labels.
 
         The coherence of all connections within a label are averaged.
@@ -528,39 +552,47 @@ class VertexConnectivity(_BaseConnectivity):
                                      annotation.
         """
         if not isinstance(labels, list):
-            raise ValueError('labels must be a list of labels')
+            raise ValueError("labels must be a list of labels")
         # Make sure labels and connectivity are compatible
-        if labels[0].subject is not None and self.subject is not None \
-                and labels[0].subject != self.subject:
+        if (
+            labels[0].subject is not None
+            and self.subject is not None
+            and labels[0].subject != self.subject
+        ):
             raise RuntimeError(
-                'label and connectivity must have same subject names, '
+                "label and connectivity must have same subject names, "
                 'currently "%s" and "%s"' % (labels[0].subject, self.subject)
             )
 
-        if summary == 'degree':
+        if summary == "degree":
+
             def summary(c, f, t):
                 return float(c[f, :][:, t].nnz)
-        elif summary == 'sum':
+        elif summary == "sum":
+
             def summary(c, f, t):
                 return c[f, :][:, t].sum()
-        elif summary == 'absmax':
+        elif summary == "absmax":
+
             def summary(c, f, t):
                 if len(f) == 0 or len(t) == 0:
                     return 0.0
                 else:
                     return np.abs(c[f, :][:, t]).max()
         elif not isinstance(summary, types.FunctionType):
-            raise ValueError('The summary parameter must be "degree", "sum" '
-                             '"absmax" or a function.')
+            raise ValueError(
+                'The summary parameter must be "degree", "sum" '
+                '"absmax" or a function.'
+            )
 
-        logger.info('Computing out- and in-degree for each label...')
+        logger.info("Computing out- and in-degree for each label...")
         n_labels = len(labels)
         label_degree = np.zeros((2, n_labels), dtype=int)
         for i, label in enumerate(labels):
             vert_ind = _get_vert_ind_from_label(self.vertices, label)
             label_degree[:, i] = self.source_degree[:, vert_ind].sum(axis=1)
 
-        logger.info('Summarizing connectivity...')
+        logger.info("Summarizing connectivity...")
 
         adjacency = self.get_adjacency()
         pairs = np.triu_indices(n_labels, k=1)
@@ -569,11 +601,10 @@ class VertexConnectivity(_BaseConnectivity):
         prev_from = -1
         for pair_i, (lab_from, lab_to) in enumerate(zip(*pairs)):
             if lab_from != prev_from:
-                logger.info('    in %s' % labels[lab_from].name)
+                logger.info("    in %s" % labels[lab_from].name)
                 prev_from = lab_from
 
-            vert_from = _get_vert_ind_from_label(self.vertices,
-                                                 labels[lab_from])
+            vert_from = _get_vert_ind_from_label(self.vertices, labels[lab_from])
             vert_to = _get_vert_ind_from_label(self.vertices, labels[lab_to])
             val = summary(adjacency, vert_from, vert_to)
 
@@ -593,7 +624,7 @@ class VertexConnectivity(_BaseConnectivity):
         pairs = np.array(pairs)[:, nonzero_inds]
         summary_parc = summary_parc[nonzero_inds]
 
-        logger.info('[done]')
+        logger.info("[done]")
 
         return LabelConnectivity(
             data=summary_parc,
@@ -605,12 +636,12 @@ class VertexConnectivity(_BaseConnectivity):
 
     def __setstate__(self, state):  # noqa: D105
         super(VertexConnectivity, self).__setstate__(state)
-        self.vertices = state['vertices']
+        self.vertices = state["vertices"]
 
     def __getstate__(self):  # noqa: D105
         state = super(VertexConnectivity, self).__getstate__()
         state.update(
-            type='all-to-all',
+            type="all-to-all",
             vertices=self.vertices,
         )
         return state
@@ -627,14 +658,15 @@ class VertexConnectivity(_BaseConnectivity):
             Whether the given connectivity object is compatible with this one.
         """
         return (
-            isinstance(other, VertexConnectivity) and
-            np.array_equal(other.vertices[0], self.vertices[0]) and
-            np.array_equal(other.vertices[1], self.vertices[1]) and
-            np.array_equal(other.pairs, self.pairs)
+            isinstance(other, VertexConnectivity)
+            and np.array_equal(other.vertices[0], self.vertices[0])
+            and np.array_equal(other.vertices[1], self.vertices[1])
+            and np.array_equal(other.pairs, self.pairs)
         )
 
-    def to_original_src(self, src_orig, subject_orig=None,
-                        subjects_dir=None, verbose=None):
+    def to_original_src(
+        self, src_orig, subject_orig=None, subjects_dir=None, verbose=None
+    ):
         """Get the connectivity from a morphed source to the original subject.
 
         Parameters
@@ -662,9 +694,9 @@ class VertexConnectivity(_BaseConnectivity):
         mne.morph_source_spaces
         """
         if self.subject is None:
-            raise ValueError('con.subject must be set')
+            raise ValueError("con.subject must be set")
 
-        src_orig = _ensure_src(src_orig, kind='surface')
+        src_orig = _ensure_src(src_orig, kind="surface")
         subject_orig = _ensure_src_subject(src_orig, subject_orig)
 
         data_idx, vertices = _get_morph_src_reordering(
@@ -717,43 +749,75 @@ class LabelConnectivity(_BaseConnectivity):
     n_connections : int
         The number of connections.
     """
+
     def __init__(self, data, pairs, labels, label_degree=None, subject=None):
         if not isinstance(labels, list):
-            raise ValueError('labels must be a list of labels')
+            raise ValueError("labels must be a list of labels")
         _BaseConnectivity.__init__(
             self,
             data=data,
             pairs=pairs,
             n_sources=len(labels),
             source_degree=label_degree,
-            subject=subject
+            subject=subject,
         )
         self.labels = labels
 
     @copy_function_doc_to_method_doc(plot_connectivity)
-    def plot(self, n_lines=None, node_angles=None, node_width=None,
-             node_colors=None, facecolor='black', textcolor='white',
-             node_edgecolor='black', linewidth=1.5, colormap='hot', vmin=None,
-             vmax=None, colorbar=True, title=None, colorbar_size=0.2,
-             colorbar_pos=(-0.3, 0.1), fontsize_title=12, fontsize_names=8,
-             fontsize_colorbar=8, padding=6., fig=None, subplot=111,
-             interactive=True, node_linewidth=2., show=True):
-        return plot_connectivity(self, n_lines=n_lines,
-                                 node_angles=node_angles,
-                                 node_width=node_width,
-                                 node_colors=node_colors, facecolor=facecolor,
-                                 textcolor=textcolor,
-                                 node_edgecolor=node_edgecolor,
-                                 linewidth=linewidth, colormap=colormap,
-                                 vmin=vmin, vmax=vmax, colorbar=colorbar,
-                                 title=title, colorbar_size=colorbar_size,
-                                 colorbar_pos=colorbar_pos,
-                                 fontsize_title=fontsize_title,
-                                 fontsize_names=fontsize_names,
-                                 fontsize_colorbar=fontsize_colorbar,
-                                 padding=padding, fig=fig, subplot=subplot,
-                                 interactive=interactive,
-                                 node_linewidth=node_linewidth, show=show)
+    def plot(  # noqa
+        self,
+        n_lines=None,
+        node_angles=None,
+        node_width=None,
+        node_colors=None,
+        facecolor="black",
+        textcolor="white",
+        node_edgecolor="black",
+        linewidth=1.5,
+        colormap="hot",
+        vmin=None,
+        vmax=None,
+        colorbar=True,
+        title=None,
+        colorbar_size=0.2,
+        colorbar_pos=(-0.3, 0.1),
+        fontsize_title=12,
+        fontsize_names=8,
+        fontsize_colorbar=8,
+        padding=6.0,
+        fig=None,
+        subplot=111,
+        interactive=True,
+        node_linewidth=2.0,
+        show=True,
+    ):
+        return plot_connectivity(
+            self,
+            n_lines=n_lines,
+            node_angles=node_angles,
+            node_width=node_width,
+            node_colors=node_colors,
+            facecolor=facecolor,
+            textcolor=textcolor,
+            node_edgecolor=node_edgecolor,
+            linewidth=linewidth,
+            colormap=colormap,
+            vmin=vmin,
+            vmax=vmax,
+            colorbar=colorbar,
+            title=title,
+            colorbar_size=colorbar_size,
+            colorbar_pos=colorbar_pos,
+            fontsize_title=fontsize_title,
+            fontsize_names=fontsize_names,
+            fontsize_colorbar=fontsize_colorbar,
+            padding=padding,
+            fig=fig,
+            subplot=subplot,
+            interactive=interactive,
+            node_linewidth=node_linewidth,
+            show=show,
+        )
 
     def is_compatible(self, other):
         """Check compatibility with another connectivity object.
@@ -767,23 +831,31 @@ class LabelConnectivity(_BaseConnectivity):
             Whether the given connectivity object is compatible with this one.
         """
         return (
-            isinstance(other, LabelConnectivity) and
-            np.array_equal(other.pairs, self.pairs) and
-            np.all([np.array_equal(l1.vertices, l2.vertices)
-                    for l1, l2 in zip(other.labels, self.labels)]) and
-            np.all([np.array_equal(l1.values, l2.values)
-                    for l1, l2 in zip(other.labels, self.labels)])
+            isinstance(other, LabelConnectivity)
+            and np.array_equal(other.pairs, self.pairs)
+            and np.all(
+                [
+                    np.array_equal(l1.vertices, l2.vertices)
+                    for l1, l2 in zip(other.labels, self.labels)
+                ]
+            )
+            and np.all(
+                [
+                    np.array_equal(l1.values, l2.values)
+                    for l1, l2 in zip(other.labels, self.labels)
+                ]
+            )
         )
 
     def __setstate__(self, state):  # noqa: D105
         super(LabelConnectivity, self).__setstate__(state)
-        self.labels = [Label(*l) for l in state['labels']]
+        self.labels = [Label(*label) for label in state["labels"]]
 
     def __getstate__(self):  # noqa: D105
         state = super(LabelConnectivity, self).__getstate__()
         state.update(
-            type='label',
-            labels=[l.__getstate__() for l in self.labels],
+            type="label",
+            labels=[label.__getstate__() for label in self.labels],
         )
         return state
 
@@ -804,16 +876,15 @@ def _get_vert_ind_from_label(vertices, label):
         The indices of the vertices that fall within the given label.
     """
     if not isinstance(label, Label) and not isinstance(label, BiHemiLabel):
-        raise TypeError('Expected Label or BiHemiLabel; got %r'
-                        % label)
-    if label.hemi == 'both':
+        raise TypeError("Expected Label or BiHemiLabel; got %r" % label)
+    if label.hemi == "both":
         vertex_ind_lh = _get_vert_ind_from_label(vertices, label.lh)
         vertex_ind_rh = _get_vert_ind_from_label(vertices, label.rh)
         return np.hstack((vertex_ind_lh, vertex_ind_rh))
-    elif label.hemi == 'lh':
+    elif label.hemi == "lh":
         verts_present = np.intersect1d(vertices[0], label.vertices)
         return np.searchsorted(vertices[0], verts_present)
-    elif label.hemi == 'rh':
+    elif label.hemi == "rh":
         verts_present = np.intersect1d(vertices[1], label.vertices)
         return np.searchsorted(vertices[1], verts_present) + len(vertices[0])
 
@@ -836,29 +907,29 @@ def read_connectivity(fname):
     --------
     Connectivity.save : For saving connectivity objects
     """
-    if not fname.endswith('.h5'):
-        fname += '.h5'
+    if not fname.endswith(".h5"):
+        fname += ".h5"
 
-    con_dict = read_hdf5(fname, title='conpy')
-    con_type = con_dict['type']
-    del con_dict['type']
+    con_dict = read_hdf5(fname, title="conpy")
+    con_type = con_dict["type"]
+    del con_dict["type"]
 
-    if con_type == 'all-to-all':
+    if con_type == "all-to-all":
         return VertexConnectivity(
-            data=con_dict['data'],
-            pairs=con_dict['pairs'],
-            vertices=con_dict['vertices'],
-            vertex_degree=con_dict['source_degree'],
-            subject=con_dict['subject'],
+            data=con_dict["data"],
+            pairs=con_dict["pairs"],
+            vertices=con_dict["vertices"],
+            vertex_degree=con_dict["source_degree"],
+            subject=con_dict["subject"],
         )
-    elif con_type == 'label':
-        labels = [Label(**l) for l in con_dict['labels']]
+    elif con_type == "label":
+        labels = [Label(**label) for label in con_dict["labels"]]
         return LabelConnectivity(
-            data=con_dict['data'],
-            pairs=con_dict['pairs'],
+            data=con_dict["data"],
+            pairs=con_dict["pairs"],
             labels=labels,
-            label_degree=con_dict['source_degree'],
-            subject=con_dict['subject'],
+            label_degree=con_dict["source_degree"],
+            subject=con_dict["subject"],
         )
 
 
@@ -889,15 +960,17 @@ def all_to_all_connectivity_pairs(src_or_fwd, min_dist=0.04):
     """
     # Get coordinates of the vertices
     if isinstance(src_or_fwd, SourceSpaces):
-        vertno_lh = src_or_fwd[0]['vertno']
-        vertno_rh = src_or_fwd[1]['vertno']
-        grid_points = np.vstack((src_or_fwd[0]['rr'][vertno_lh],
-                                 src_or_fwd[1]['rr'][vertno_rh]))
+        vertno_lh = src_or_fwd[0]["vertno"]
+        vertno_rh = src_or_fwd[1]["vertno"]
+        grid_points = np.vstack(
+            (src_or_fwd[0]["rr"][vertno_lh], src_or_fwd[1]["rr"][vertno_rh])
+        )
     elif isinstance(src_or_fwd, Forward):
-        grid_points = src_or_fwd['source_rr']
+        grid_points = src_or_fwd["source_rr"]
     else:
-        raise ValueError('Source must be instance of Forward or a list',
-                         'of SourceSpaces')
+        raise ValueError(
+            "Source must be instance of Forward or a list", "of SourceSpaces"
+        )
 
     n_sources = len(grid_points)
 
@@ -942,15 +1015,17 @@ def one_to_all_connectivity_pairs(src_or_fwd, ref_point, min_dist=0):
     """
     # Get coordinates of the vertices
     if isinstance(src_or_fwd, SourceSpaces):
-        vertno_lh = src_or_fwd[0]['vertno']
-        vertno_rh = src_or_fwd[1]['vertno']
-        grid_points = np.vstack((src_or_fwd[0]['rr'][vertno_lh],
-                                 src_or_fwd[1]['rr'][vertno_rh]))
+        vertno_lh = src_or_fwd[0]["vertno"]
+        vertno_rh = src_or_fwd[1]["vertno"]
+        grid_points = np.vstack(
+            (src_or_fwd[0]["rr"][vertno_lh], src_or_fwd[1]["rr"][vertno_rh])
+        )
     elif isinstance(src_or_fwd, Forward):
-        grid_points = src_or_fwd['source_rr']
+        grid_points = src_or_fwd["source_rr"]
     else:
-        raise ValueError('Source must be instance of Forward or a list',
-                         'of SourceSpaces')
+        raise ValueError(
+            "Source must be instance of Forward or a list", "of SourceSpaces"
+        )
 
     # Select the pairs that are further away than the distance limit
     dist = cdist(grid_points[ref_point][np.newaxis], grid_points)
@@ -966,14 +1041,18 @@ try:
     import numba as nb
 
     @nb.jit(nb.complex128[:, :, :](nb.complex128[:, :, :], nb.complex128[:, :]))
-    def compute_opt1(x, y):
+    def _compute_opt1(x, y):
         r = np.zeros((x.shape[0], y.shape[1], y.shape[1]), dtype=nb.complex128)
         for i in range(len(x)):
             r[i, :, :] = np.dot(np.dot(y.T, x[i, :, :]), y)
         return r
 
-    @nb.jit(nb.complex128[:, :, :](nb.complex128[:, :, :], nb.complex128[:, :, :], nb.int64[:], nb.int64[:]))
-    def compute_power_cross_inv(x, y, x_ind, y_ind):
+    @nb.jit(
+        nb.complex128[:, :, :](
+            nb.complex128[:, :, :], nb.complex128[:, :, :], nb.int64[:], nb.int64[:]
+        )
+    )
+    def _compute_power_cross_inv(x, y, x_ind, y_ind):
         r = np.zeros((x_ind.shape[0], x.shape[0], y.shape[2]), dtype=nb.complex128)
         i = 0
         for x_i, y_i in zip(x_ind, y_ind):
@@ -982,19 +1061,26 @@ try:
         return r
 
     @nb.jit(nb.complex128[:, :, :](nb.complex128[:, :, :], nb.complex128[:, :, :]))
-    def compute_power_cross_inv2(x, y):
+    def _compute_power_cross_inv2(x, y):
         r = np.zeros((x.shape[1], x.shape[0], y.shape[2]), dtype=nb.complex128)
         for i in range(x.shape[1]):
             r[i, :, :] = np.dot(x[:, i, :], y[:, i, :])
         return r
 
     numba_enabled = True
-except:
+except Exception:
     numba_enabled = False
 
 
-def _compute_dics_coherence(W, G, vert_ind_from, vert_ind_to, spec_power_inv,
-                            orientations, coh_metric='absolute'):
+def _compute_dics_coherence(
+    W,
+    G,
+    vert_ind_from,
+    vert_ind_to,
+    spec_power_inv,
+    orientations,
+    coh_metric="absolute",
+):
     """Compute the coherence between two sources using a DICS beamformer.
 
     Computes the coherence between two dipoles for different angles and returns
@@ -1033,22 +1119,24 @@ def _compute_dics_coherence(W, G, vert_ind_from, vert_ind_to, spec_power_inv,
     power_to_inv = spec_power_inv[vert_ind_to]
 
     if numba_enabled:
-        power_cross_inv = compute_power_cross_inv(
-            W, G.astype(np.complex), vert_ind_from, vert_ind_to)
+        power_cross_inv = _compute_power_cross_inv(
+            W, G.astype("complex"), vert_ind_from, vert_ind_to
+        )
 
-        opt1 = compute_opt1(power_cross_inv, orientations.astype(np.complex))
+        opt1 = _compute_opt1(power_cross_inv, orientations.astype("complex"))
     else:
         # Computes W @ G
         power_cross_inv = np.einsum(
-            'ijk,kjl->jil', W[:, vert_ind_from, :], G[:, vert_ind_to, :])
+            "ijk,kjl->jil", W[:, vert_ind_from, :], G[:, vert_ind_to, :]
+        )
 
         # Computes orientations.T @ power_cross_inv @ orientations
         opt1 = power_cross_inv.dot(orientations)
         opt1 = opt1.transpose(0, 2, 1).dot(orientations).transpose(0, 2, 1)
 
-    if coh_metric == 'absolute':
+    if coh_metric == "absolute":
         opt1 = np.abs(opt1)
-    elif coh_metric == 'imaginary':
+    elif coh_metric == "imaginary":
         opt1 = np.imag(opt1)
 
     # Computes np.diag(orientations.T @ power_from_inv @ orientations)
@@ -1058,20 +1146,24 @@ def _compute_dics_coherence(W, G, vert_ind_from, vert_ind_to, spec_power_inv,
     opt3 = np.sum(orientations * power_to_inv.dot(orientations), axis=1)
 
     # Compute coherence for each orientation
-    opt = (opt1 ** 2) / (opt2[:, :, np.newaxis] * opt3[:, np.newaxis, :])
+    opt = (opt1**2) / (opt2[:, :, np.newaxis] * opt3[:, np.newaxis, :])
 
     # Pick the best orientation as the final coherence value
     return np.real(np.max(opt, axis=(1, 2)))
 
 
-def dics_connectivity_to_external_signal():
-    pass
-
-
 @verbose
-def dics_connectivity(vertex_pairs, fwd, data_csd, reg=0.05,
-                      coh_metric='absolute', n_angles=50, block_size=10000,
-                      n_jobs=1, verbose=None):
+def dics_connectivity(
+    vertex_pairs,
+    fwd,
+    data_csd,
+    reg=0.05,
+    coh_metric="absolute",
+    n_angles=50,
+    block_size=10000,
+    n_jobs=1,
+    verbose=None,
+):
     """Compute spectral connectivity using a DICS beamformer.
 
     Calculates the connectivity between the given vertex pairs using a DICS
@@ -1136,26 +1228,27 @@ def dics_connectivity(vertex_pairs, fwd, data_csd, reg=0.05,
            NeuroImage, 39(4), 1706–1720.
     """
     fwd = pick_channels_forward(fwd, data_csd.ch_names)
-    data_csd = pick_channels_csd(data_csd, fwd['info']['ch_names'])
+    data_csd = pick_channels_csd(data_csd, fwd["info"]["ch_names"])
 
     vertex_from, vertex_to = vertex_pairs
     if len(vertex_from) != len(vertex_to):
-        raise ValueError('Lengths of the two lists of vertices do not match.')
+        raise ValueError("Lengths of the two lists of vertices do not match.")
     n_pairs = len(vertex_from)
 
-    G = fwd['sol']['data'].copy()
-    n_orient = G.shape[1] // fwd['nsource']
+    G = fwd["sol"]["data"].copy()
+    n_orient = G.shape[1] // fwd["nsource"]
 
     if n_orient == 1:
-        raise ValueError('A forward operator with free or tangential '
-                         'orientation must be used.')
+        raise ValueError(
+            "A forward operator with free or tangential " "orientation must be used."
+        )
     elif n_orient == 3:
         # Convert forward to tangential orientation for more speed.
         fwd = forward_to_tangential(fwd)
-        G = fwd['sol']['data']
+        G = fwd["sol"]["data"]
         n_orient = 2
 
-    G = G.reshape(G.shape[0], fwd['nsource'], n_orient)
+    G = G.reshape(G.shape[0], fwd["nsource"], n_orient)
 
     # Normalize the lead field
     G /= np.linalg.norm(G, axis=0)
@@ -1167,15 +1260,17 @@ def dics_connectivity(vertex_pairs, fwd, data_csd, reg=0.05,
     W = np.dot(G.T, Cm_inv)
 
     # Pre-compute spectral power at each unique vertex
-    unique_verts, vertex_map = np.unique(np.r_[vertex_from, vertex_to],
-                                         return_inverse=True)
-    spec_power_inv = np.array([np.dot(W[:, vert, :], G[:, vert, :])
-                               for vert in unique_verts])
+    unique_verts, vertex_map = np.unique(
+        np.r_[vertex_from, vertex_to], return_inverse=True
+    )
+    spec_power_inv = np.array(
+        [np.dot(W[:, vert, :], G[:, vert, :]) for vert in unique_verts]
+    )
 
     # Map vertex indices to unique indices, so the pre-computed spectral power
     # can be retrieved
-    vertex_from_map = vertex_map[:len(vertex_from)]
-    vertex_to_map = vertex_map[len(vertex_from):]
+    vertex_from_map = vertex_map[: len(vertex_from)]
+    vertex_to_map = vertex_map[len(vertex_from) :]
 
     coherence = np.zeros((len(vertex_from)))
 
@@ -1185,33 +1280,41 @@ def dics_connectivity(vertex_pairs, fwd, data_csd, reg=0.05,
 
     # Create chunks of pairs to evaluate at once
     n_blocks = int(np.ceil(n_pairs / float(block_size)))
-    blocks = [slice(i * block_size, min((i + 1) * block_size, n_pairs))
-              for i in range(n_blocks)]
+    blocks = [
+        slice(i * block_size, min((i + 1) * block_size, n_pairs))
+        for i in range(n_blocks)
+    ]
 
     parallel, my_compute_dics_coherence, _ = parallel_func(
-        _compute_dics_coherence, n_jobs, verbose)
+        _compute_dics_coherence, n_jobs, verbose
+    )
 
-    logger.info('Computing coherence between %d source pairs in %d blocks...'
-                % (n_pairs, n_blocks))
+    logger.info(
+        "Computing coherence between %d source pairs in %d blocks..."
+        % (n_pairs, n_blocks)
+    )
     if numba_enabled:
-        logger.info('Using numba optimized code path.')
-    coherence = np.hstack(parallel(
-        my_compute_dics_coherence(
-            W, G,
-            vertex_from_map[block],
-            vertex_to_map[block],
-            spec_power_inv,
-            orientations,
-            coh_metric,
+        logger.info("Using numba optimized code path.")
+    coherence = np.hstack(
+        parallel(
+            my_compute_dics_coherence(
+                W,
+                G,
+                vertex_from_map[block],
+                vertex_to_map[block],
+                spec_power_inv,
+                orientations,
+                coh_metric,
+            )
+            for block in blocks
         )
-        for block in blocks
-    ))
-    logger.info('[done]')
+    )
+    logger.info("[done]")
 
     return VertexConnectivity(
         data=coherence,
-        pairs=[v[:len(coherence)] for v in vertex_pairs],
-        vertices=[s['vertno'] for s in fwd['src']],
+        pairs=[v[: len(coherence)] for v in vertex_pairs],
+        vertices=[s["vertno"] for s in fwd["src"]],
         vertex_degree=None,  # Compute this in the constructor
-        subject=fwd['src'][0]['subject_his_id'],
+        subject=fwd["src"][0]["subject_his_id"],
     )

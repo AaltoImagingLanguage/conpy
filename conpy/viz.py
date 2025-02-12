@@ -1,24 +1,42 @@
 # -*- coding: utf-8 -*-
-"""
-Plotting functions.
+"""Plotting functions.
 
 Authors: Susanna Aro <susanna.aro@aalto.fi>
          Marijn van Vliet <w.m.vanvliet@gmail.com>
 """
-import numpy as np
 
+import numpy as np
 from mne.viz.circle import circular_layout
 from mne_connectivity.viz import plot_connectivity_circle
 
 
-def plot_connectivity(con, n_lines=None, node_angles=None, node_width=None,
-                      node_colors=None, facecolor='black', textcolor='white',
-                      node_edgecolor='black', linewidth=1.5, colormap='hot',
-                      vmin=None, vmax=None, colorbar=True, title=None,
-                      colorbar_size=0.2, colorbar_pos=(-0.3, 0.1),
-                      fontsize_title=12, fontsize_names=8, fontsize_colorbar=8,
-                      padding=6., fig=None, subplot=111, interactive=True,
-                      node_linewidth=2., show=True):
+def plot_connectivity(
+    con,
+    n_lines=None,
+    node_angles=None,
+    node_width=None,
+    node_colors=None,
+    facecolor="black",
+    textcolor="white",
+    node_edgecolor="black",
+    linewidth=1.5,
+    colormap="hot",
+    vmin=None,
+    vmax=None,
+    colorbar=True,
+    title=None,
+    colorbar_size=0.2,
+    colorbar_pos=(-0.3, 0.1),
+    fontsize_title=12,
+    fontsize_names=8,
+    fontsize_colorbar=8,
+    padding=6.0,
+    fig=None,
+    subplot=111,
+    interactive=True,
+    node_linewidth=2.0,
+    show=True,
+):
     """Visualize parcellated connectivity as a circular graph.
 
     Parameters
@@ -93,17 +111,17 @@ def plot_connectivity(con, n_lines=None, node_angles=None, node_width=None,
     axes : instance of matplotlib.axes.PolarAxesSubplot
         The subplot handle.
     """
-    names = [l.name for l in con.labels]
+    names = [label.name for label in con.labels]
 
     if node_colors is None:
-        node_colors = [l.color for l in con.labels]
+        node_colors = [label.color for label in con.labels]
 
     if node_angles is None:
         # Try to construct a sensible default layout
 
         # First, we reorder the labels based on their location in the left
         # hemisphere.
-        lh_labels = [name for name in names if name.endswith('lh')]
+        lh_labels = [name for name in names if name.endswith("lh")]
 
         # Get the y-location of the label
         label_ypos = list()
@@ -113,12 +131,11 @@ def plot_connectivity(con, n_lines=None, node_angles=None, node_width=None,
             label_ypos.append(ypos)
 
         # Reorder the labels based on their location
-        lh_labels = [label
-                     for (yp, label) in sorted(zip(label_ypos, lh_labels))]
+        lh_labels = [label for (yp, label) in sorted(zip(label_ypos, lh_labels))]
 
         # Second, we reorder the labels based on their location in the right
         # hemisphere.
-        rh_labels = [name for name in names if name.endswith('rh')]
+        rh_labels = [name for name in names if name.endswith("rh")]
         # For the right hemi
         # Get the y-location of the label
         rlabel_ypos = list()
@@ -128,26 +145,44 @@ def plot_connectivity(con, n_lines=None, node_angles=None, node_width=None,
             rlabel_ypos.append(ypos)
 
         # Reorder the labels based on their location
-        rh_labels = [label
-                     for (yp, label) in sorted(zip(rlabel_ypos, rh_labels), reverse=True)]
+        rh_labels = [
+            label for (yp, label) in sorted(zip(rlabel_ypos, rh_labels), reverse=True)
+        ]
 
         # Save the plot order and create a circular layout
         node_order = list()
         node_order.extend(lh_labels[::-1])  # reverse the order
         node_order.extend(rh_labels[::-1])  # reverse the order
 
-        node_angles = circular_layout(names, node_order, start_pos=90,
-                                      group_boundaries=[0, len(names) / 2])
+        node_angles = circular_layout(
+            names, node_order, start_pos=90, group_boundaries=[0, len(names) / 2]
+        )
 
     return plot_connectivity_circle(
-        con.data, node_names=names, indices=con.pairs,
-        n_lines=n_lines, node_angles=node_angles, node_width=node_width,
-        node_colors=node_colors, facecolor=facecolor, textcolor=textcolor,
-        node_edgecolor=node_edgecolor, linewidth=linewidth,
-        colormap=colormap, vmin=vmin, vmax=vmax, colorbar=colorbar,
-        title=title, colorbar_size=colorbar_size,
-        colorbar_pos=colorbar_pos, fontsize_title=fontsize_title,
-        fontsize_names=fontsize_names, fontsize_colorbar=fontsize_colorbar,
-        padding=padding, fig=fig, interactive=interactive,
-        node_linewidth=node_linewidth, show=show
+        con.data,
+        node_names=names,
+        indices=con.pairs,
+        n_lines=n_lines,
+        node_angles=node_angles,
+        node_width=node_width,
+        node_colors=node_colors,
+        facecolor=facecolor,
+        textcolor=textcolor,
+        node_edgecolor=node_edgecolor,
+        linewidth=linewidth,
+        colormap=colormap,
+        vmin=vmin,
+        vmax=vmax,
+        colorbar=colorbar,
+        title=title,
+        colorbar_size=colorbar_size,
+        colorbar_pos=colorbar_pos,
+        fontsize_title=fontsize_title,
+        fontsize_names=fontsize_names,
+        fontsize_colorbar=fontsize_colorbar,
+        padding=padding,
+        fig=fig,
+        interactive=interactive,
+        node_linewidth=node_linewidth,
+        show=show,
     )

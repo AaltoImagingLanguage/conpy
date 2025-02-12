@@ -1,12 +1,18 @@
-""" Some utility functions.
+"""Some utility functions.
 
 Author: Marijn van Vliet <w.m.vanvliet@gmail.com>
 """
+
 import operator
+
 import numpy as np
-from mne.source_space._source_space import (_ensure_src, _get_morph_src_reordering,
-                                            _ensure_src_subject, SourceSpaces)
-from mne.utils import warn, get_subjects_dir
+from mne.source_space._source_space import (
+    SourceSpaces,
+    _ensure_src,
+    _ensure_src_subject,
+    _get_morph_src_reordering,
+)
+from mne.utils import get_subjects_dir, warn
 
 try:
     # MNE-Python 0.18 and up
@@ -34,8 +40,7 @@ def _make_diagonal_noise_matrix(csd, reg):
     noise : ndarray, shape (n_series, n_series)
         A suitable noise cross-spectral density (CSD) matrix.
     """
-    rank, s = estimate_rank(csd, tol='auto', norm=False,
-                            return_singular=True)
+    rank, s = estimate_rank(csd, tol="auto", norm=False, return_singular=True)
     last_singular_value = abs(s[rank - 1])
     ratio = max(abs(reg), last_singular_value)
     return np.eye(len(csd)) * ratio
@@ -69,19 +74,25 @@ def _find_indices_1d(haystack, needles, check_needles=True):
     haystack = np.asarray(haystack)
     needles = np.asarray(needles)
     if haystack.ndim != 1 or needles.ndim != 1:
-        raise ValueError('Both the haystack and the needles arrays should be '
-                         '1D.')
+        raise ValueError("Both the haystack and the needles arrays should be " "1D.")
 
     if check_needles and len(np.setdiff1d(needles, haystack)) > 0:
-        raise IndexError('One or more values where not present in the given '
-                         'haystack array.')
+        raise IndexError(
+            "One or more values where not present in the given " "haystack array."
+        )
 
     sorted_ind = np.argsort(haystack)
     return sorted_ind[np.searchsorted(haystack[sorted_ind], needles)]
 
 
-def get_morph_src_mapping(src_from, src_to, subject_from=None,
-                          subject_to=None, subjects_dir=None, indices=False):
+def get_morph_src_mapping(
+    src_from,
+    src_to,
+    subject_from=None,
+    subject_to=None,
+    subjects_dir=None,
+    indices=False,
+):
     """Get a mapping between an original source space and its morphed version.
 
     It is assumed that the number of vertices and their positions match between
@@ -118,39 +129,44 @@ def get_morph_src_mapping(src_from, src_to, subject_from=None,
         src_to -> src_from. If ``indices=False``, for each hemisphere, a
         dictionary mapping vertex numbers from src_to -> src_from.
 
-    See also
+    See Also
     --------
     _get_morph_src_reordering
     """
     if subject_from is None:
-        subject_from = src_from[0]['subject_his_id']
+        subject_from = src_from[0]["subject_his_id"]
     if subject_to is None:
-        subject_to = src_to[0]['subject_his_id']
+        subject_to = src_to[0]["subject_his_id"]
     subjects_dir = get_subjects_dir(subjects_dir, raise_error=True)
 
-    src_from = _ensure_src(src_from, kind='surface')
+    src_from = _ensure_src(src_from, kind="surface")
     subject_from = _ensure_src_subject(src_from, subject_from)
 
     if isinstance(src_to, SourceSpaces):
-        to_vert_lh = src_to[0]['vertno']
-        to_vert_rh = src_to[1]['vertno']
+        to_vert_lh = src_to[0]["vertno"]
+        to_vert_rh = src_to[1]["vertno"]
     else:
         if subject_to is None:
-            ValueError('When supplying vertex numbers as `src_to`, the '
-                       '`subject_to` parameter must be set.')
+            ValueError(
+                "When supplying vertex numbers as `src_to`, the "
+                "`subject_to` parameter must be set."
+            )
         to_vert_lh, to_vert_rh = src_to
 
     order, from_vert = _get_morph_src_reordering(
-        [to_vert_lh, to_vert_rh], src_from, subject_from, subject_to,
-        subjects_dir=subjects_dir
+        [to_vert_lh, to_vert_rh],
+        src_from,
+        subject_from,
+        subject_to,
+        subjects_dir=subjects_dir,
     )
     from_vert_lh, from_vert_rh = from_vert
 
     if indices:
         # Find vertex indices corresponding to the vertex numbers for src_from
-        from_n_lh = src_from[0]['nuse']
-        from_ind_lh = _find_indices_1d(src_from[0]['vertno'], from_vert_lh)
-        from_ind_rh = _find_indices_1d(src_from[1]['vertno'], from_vert_rh)
+        from_n_lh = src_from[0]["nuse"]
+        from_ind_lh = _find_indices_1d(src_from[0]["vertno"], from_vert_lh)
+        from_ind_rh = _find_indices_1d(src_from[1]["vertno"], from_vert_rh)
         from_ind = np.hstack((from_ind_lh, from_ind_rh + from_n_lh))
 
         # The indices for src_to are easy
@@ -166,15 +182,19 @@ def get_morph_src_mapping(src_from, src_to, subject_from=None,
         to_vert_rh = to_vert_rh[order[to_n_lh:] - to_n_lh]
 
         # Create the mappings
-        from_to = [dict(zip(from_vert_lh, to_vert_lh)),
-                   dict(zip(from_vert_rh, to_vert_rh))]
-        to_from = [dict(zip(to_vert_lh, from_vert_lh)),
-                   dict(zip(to_vert_rh, from_vert_rh))]
+        from_to = [
+            dict(zip(from_vert_lh, to_vert_lh)),
+            dict(zip(from_vert_rh, to_vert_rh)),
+        ]
+        to_from = [
+            dict(zip(to_vert_lh, from_vert_lh)),
+            dict(zip(to_vert_rh, from_vert_rh)),
+        ]
 
     return from_to, to_from
 
 
-def _estimate_rank_from_s(s, tol='auto'):
+def _estimate_rank_from_s(s, tol="auto"):
     """Estimate the rank of a matrix from its singular values.
 
     Parameters
@@ -192,7 +212,7 @@ def _estimate_rank_from_s(s, tol='auto'):
         The estimated rank.
     """
     if isinstance(tol, str):
-        if tol != 'auto':
+        if tol != "auto":
             raise ValueError('tol must be "auto" or float')
         eps = np.finfo(float).eps
         tol = len(s) * np.amax(s) * eps
@@ -202,7 +222,7 @@ def _estimate_rank_from_s(s, tol='auto'):
     return rank
 
 
-def reg_pinv(x, reg=0, rank='full', rcond=1e-15):
+def reg_pinv(x, reg=0, rank="full", rcond=1e-15):
     """Compute a regularized pseudoinverse of a square matrix.
 
     Regularization is performed by adding a constant value to each diagonal
@@ -247,18 +267,18 @@ def reg_pinv(x, reg=0, rank='full', rcond=1e-15):
         else the estimated rank of the matrix, before regularization, is
         returned.
     """
-    if rank is not None and rank != 'full':
+    if rank is not None and rank != "full":
         rank = int(operator.index(rank))
     if x.ndim != 2 or x.shape[0] != x.shape[1]:
-        raise ValueError('Input matrix must be square.')
+        raise ValueError("Input matrix must be square.")
     if not np.allclose(x, x.conj().T):
-        raise ValueError('Input matrix must be Hermitian (symmetric)')
+        raise ValueError("Input matrix must be Hermitian (symmetric)")
 
     # Decompose the matrix
     U, s, V = np.linalg.svd(x)
 
     # Estimate the rank before regularization
-    tol = 'auto' if rcond == 'auto' else rcond * s.max()
+    tol = "auto" if rcond == "auto" else rcond * s.max()
     rank_before = _estimate_rank_from_s(s, tol)
 
     # Decompose the matrix again after regularization
@@ -266,23 +286,23 @@ def reg_pinv(x, reg=0, rank='full', rcond=1e-15):
     U, s, V = np.linalg.svd(x + loading_factor * np.eye(len(x)))
 
     # Estimate the rank after regularization
-    tol = 'auto' if rcond == 'auto' else rcond * s.max()
+    tol = "auto" if rcond == "auto" else rcond * s.max()
     rank_after = _estimate_rank_from_s(s, tol)
 
     # Warn the user if both all parameters were kept at their defaults and the
     # matrix is rank deficient.
-    if rank_after < len(x) and reg == 0 and rank == 'full' and rcond == 1e-15:
-        warn('Covariance matrix is rank-deficient and no regularization is '
-             'done.')
+    if rank_after < len(x) and reg == 0 and rank == "full" and rcond == 1e-15:
+        warn("Covariance matrix is rank-deficient and no regularization is " "done.")
     elif isinstance(rank, int) and rank > len(x):
-        raise ValueError('Invalid value for the rank parameter (%d) given '
-                         'the shape of the input matrix (%d x %d).' %
-                         (rank, x.shape[0], x.shape[1]))
+        raise ValueError(
+            "Invalid value for the rank parameter (%d) given "
+            "the shape of the input matrix (%d x %d)." % (rank, x.shape[0], x.shape[1])
+        )
 
     # Pick the requested number of singular values
     if rank is None:
         sel_s = s[:rank_before]
-    elif rank == 'full':
+    elif rank == "full":
         sel_s = s[:rank_after]
     else:
         sel_s = s[:rank]
@@ -291,12 +311,12 @@ def reg_pinv(x, reg=0, rank='full', rcond=1e-15):
     s_inv = np.zeros(s.shape)
     nonzero_inds = np.flatnonzero(sel_s != 0)
     if len(nonzero_inds) > 0:
-        s_inv[nonzero_inds] = 1. / sel_s[nonzero_inds]
+        s_inv[nonzero_inds] = 1.0 / sel_s[nonzero_inds]
 
     # Compute the pseudo inverse
     x_inv = np.dot(V.T, s_inv[:, np.newaxis] * U.T)
 
-    if rank is None or rank == 'full':
+    if rank is None or rank == "full":
         return x_inv, loading_factor, rank_before
     else:
         return x_inv, loading_factor, rank

@@ -7,20 +7,22 @@ operator, some vertices are dropped due to being too close to the skull, the
 selected indices wouldn't match up if we repeat this selection on the forward
 operator. Therefore we will use the vertex numbers to align the selections.
 """
+
 from __future__ import print_function
 
 import numpy as np
 import mne
 import conpy
 from mayavi import mlab
+
 mlab.options.offscreen = True  # Don't open a window when rendering figure
 
 from config import fname, subjects, max_sensor_dist, min_pair_dist
 
 # Be verbose
-mne.set_log_level('INFO')
+mne.set_log_level("INFO")
 
-print('Restricting source spaces...')
+print("Restricting source spaces...")
 # Restrict the forward operator of the first subject to vertices that are close
 # to the sensors.
 fwd1 = mne.read_forward_solution(fname.fwd(subject=subjects[0]))
@@ -37,14 +39,14 @@ for subject in subjects[1:]:
 # fsaverage brain as a reference to determine corresponding vertices across
 # subjects.
 fsaverage = mne.read_source_spaces(fname.fsaverage_src)
-vert_inds = conpy.select_shared_vertices(fwds, ref_src=fsaverage,
-                                         subjects_dir=fname.subjects_dir)
+vert_inds = conpy.select_shared_vertices(
+    fwds, ref_src=fsaverage, subjects_dir=fname.subjects_dir
+)
 
 # Restrict all forward operators to the same vertices and save them.
 for fwd, vert_ind, subject in zip(fwds, vert_inds, subjects):
     fwd_r = conpy.restrict_forward_to_vertices(fwd, vert_ind)
-    mne.write_forward_solution(fname.fwd_r(subject=subject), fwd_r,
-                               overwrite=True)
+    mne.write_forward_solution(fname.fwd_r(subject=subject), fwd_r, overwrite=True)
 
     # Update the forward operator of the first subject
     if subject == subjects[0]:
@@ -53,32 +55,35 @@ for fwd, vert_ind, subject in zip(fwds, vert_inds, subjects):
     # Save a visualization of the restricted forward operator to the subject's
     # HTML report
     with mne.open_report(fname.report(subject=subject)) as report:
-        fig = mne.viz.plot_alignment(fwd['info'],
-                                     trans=fname.trans(subject=subject),
-                                     src=fwd_r['src'], meg='sensors',
-                                     surfaces='white')
+        fig = mne.viz.plot_alignment(
+            fwd["info"],
+            trans=fname.trans(subject=subject),
+            src=fwd_r["src"],
+            meg="sensors",
+            surfaces="white",
+        )
         fig.scene.background = (1, 1, 1)  # white
         g = fig.children[-1].children[0].children[0].glyph.glyph
         g.scale_factor = 0.008
         mlab.view(135, 120, 0.3, [0.01, 0.015, 0.058])
         report.add_figure(
-            fig,
-            title='Selected sources',
-            section='Source-level',
-            replace=True
+            fig, title="Selected sources", section="Source-level", replace=True
         )
-        report.save(fname.report_html(subject=subject), overwrite=True,
-                    open_browser=False)
+        report.save(
+            fname.report_html(subject=subject), overwrite=True, open_browser=False
+        )
 
 # Compute vertex pairs for which to compute connectivity
 # (distances are based on the MRI of the first subject).
-print('Computing connectivity pairs for all subjects...')
+print("Computing connectivity pairs for all subjects...")
 pairs = conpy.all_to_all_connectivity_pairs(fwd1, min_dist=min_pair_dist)
 
 # Store the pairs in fsaverage space
 subj1_to_fsaverage = conpy.utils.get_morph_src_mapping(
-    fsaverage, fwd1['src'], indices=True, subjects_dir=fname.subjects_dir
+    fsaverage, fwd1["src"], indices=True, subjects_dir=fname.subjects_dir
 )[1]
-pairs = [[subj1_to_fsaverage[v] for v in pairs[0]],
-         [subj1_to_fsaverage[v] for v in pairs[1]]]
+pairs = [
+    [subj1_to_fsaverage[v] for v in pairs[0]],
+    [subj1_to_fsaverage[v] for v in pairs[1]],
+]
 np.save(fname.pairs, pairs)
