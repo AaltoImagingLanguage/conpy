@@ -28,7 +28,7 @@ from .utils import reg_pinv
 from .viz import plot_connectivity
 
 
-class _BaseConnectivity(object):
+class BaseConnectivity(object):
     """Base class for connectivity objects.
 
     Contains implementation of methods that are defined for all connectivity
@@ -192,7 +192,6 @@ class _BaseConnectivity(object):
             Whether to operate in place (``False``, the default) or on a copy
             (``True``).
 
-
         Returns
         -------
         thresholded_con : instance of Connectivity
@@ -253,7 +252,7 @@ class _BaseConnectivity(object):
             Whether the given connectivity object is compatible with this one.
         """
         return (
-            isinstance(other, _BaseConnectivity)
+            isinstance(other, BaseConnectivity)
             and other.n_sources == self.n_sources
             and np.array_equal(other.pairs, self.pairs)
         )
@@ -357,7 +356,7 @@ def _compute_degree(pairs, n_sources):
     return out_degree, in_degree
 
 
-class VertexConnectivity(_BaseConnectivity):
+class VertexConnectivity(BaseConnectivity):
     """Estimation of connectivity between vertices.
 
     Parameters
@@ -404,8 +403,7 @@ class VertexConnectivity(_BaseConnectivity):
 
         self.vertices = [np.asarray(v) for v in vertices]
         n_vertices = len(self.vertices[0]) + len(self.vertices[1])
-        _BaseConnectivity.__init__(
-            self,
+        super().__init__(
             data=data,
             pairs=pairs,
             n_sources=n_vertices,
@@ -422,14 +420,13 @@ class VertexConnectivity(_BaseConnectivity):
         summary : 'sum' | 'degree' | 'absmax'
             How to summarize the adjacency data:
 
-                'sum' : sum the strenghts of both the incoming and outgoing
-                        connections for each source.
-                'degree': count the number of incoming and outgoing
-                          connections for each source.
-                'absmax' : show the strongest coherence across both incomoing
-                           and outgoing connections at each source. In this
-                           setting, the ``weight_by_degree`` parameter is
-                           ignored.
+            'sum' : sum the strenghts of both the incoming and outgoing connections
+                    for each source.
+            'degree': count the number of incoming and outgoing connections for each
+                      source.
+            'absmax' : show the strongest coherence across both incoming and outgoing
+                       connections at each source. In this setting, the
+                       ``weight_by_degree`` parameter is ignored.
 
             Defaults to ``'sum'``.
 
@@ -635,11 +632,11 @@ class VertexConnectivity(_BaseConnectivity):
         )
 
     def __setstate__(self, state):  # noqa: D105
-        super(VertexConnectivity, self).__setstate__(state)
+        super().__setstate__(state)
         self.vertices = state["vertices"]
 
     def __getstate__(self):  # noqa: D105
-        state = super(VertexConnectivity, self).__getstate__()
+        state = super().__getstate__()
         state.update(
             type="all-to-all",
             vertices=self.vertices,
@@ -721,7 +718,7 @@ class VertexConnectivity(_BaseConnectivity):
         )
 
 
-class LabelConnectivity(_BaseConnectivity):
+class LabelConnectivity(BaseConnectivity):
     """Estimation of all-to-all connectivity, parcellated into labels.
 
     Parameters
@@ -753,8 +750,7 @@ class LabelConnectivity(_BaseConnectivity):
     def __init__(self, data, pairs, labels, label_degree=None, subject=None):
         if not isinstance(labels, list):
             raise ValueError("labels must be a list of labels")
-        _BaseConnectivity.__init__(
-            self,
+        super().__init__(
             data=data,
             pairs=pairs,
             n_sources=len(labels),

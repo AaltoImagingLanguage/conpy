@@ -182,7 +182,8 @@ fwd = mne.pick_types_forward(fwd, meg="grad", eeg=False, exclude="bads")
 # Create an info object that holds information about the sensors (their
 # location, etc.).
 info = mne.create_info(fwd["info"]["ch_names"], sfreq, ch_types="grad")
-info = mne.io.Info({**info, **fwd["info"]})
+with info._unlock():
+    info.update(fwd["info"])
 
 # To simulate the data, we need a version of the forward solution where each
 # source has a "fixed" orientation, i.e. pointing orthogonally to the surface
