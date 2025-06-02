@@ -33,12 +33,15 @@ considerations, which are discussed in [3]_.
 import os.path as op
 import numpy as np
 from scipy.signal import welch, coherence
-from mayavi import mlab
 from matplotlib import pyplot as plt
 
 # The conpy package implements DICS connectivity
-from conpy import (dics_connectivity, all_to_all_connectivity_pairs,
-                   one_to_all_connectivity_pairs, forward_to_tangential)
+from conpy import (
+    dics_connectivity,
+    all_to_all_connectivity_pairs,
+    one_to_all_connectivity_pairs,
+    forward_to_tangential,
+)
 
 # MNE implements all other EEG analysis tools.
 import mne
@@ -48,22 +51,21 @@ from mne.time_frequency import csd_morlet
 from mne.beamformer import make_dics, apply_dics_csd
 
 # Suppress irrelevant output
-mne.set_log_level('ERROR')
+mne.set_log_level("ERROR")
 
 # We use the MEG and MRI setup from the MNE-sample dataset
-data_path = sample.data_path(download=False)
-subjects_dir = op.join(data_path, 'subjects')
-mri_path = op.join(subjects_dir, 'sample')
+data_path = sample.data_path(download=True)
+subjects_dir = op.join(data_path, "subjects")
+mri_path = op.join(subjects_dir, "sample")
 
 # Filenames for various files we'll be using
-meg_path = op.join(data_path, 'MEG', 'sample')
-trans_fname = op.join(meg_path, 'sample_audvis_raw-trans.fif')
-fwd_fname = op.join(meg_path, 'sample_audvis-meg-eeg-oct-6-fwd.fif')
+meg_path = op.join(data_path, "MEG", "sample")
+trans_fname = op.join(meg_path, "sample_audvis_raw-trans.fif")
+fwd_fname = op.join(meg_path, "sample_audvis-meg-eeg-oct-6-fwd.fif")
 
 # Later on, we'll use the forward model defined in the MNE-testing dataset
-testing_path = op.join(testing.data_path(download=False), 'MEG', 'sample')
-fwd_lim_fname = op.join(testing_path,
-                        'sample_audvis_trunc-meg-eeg-oct-4-fwd.fif')
+testing_path = op.join(testing.data_path(download=True), "MEG", "sample")
+fwd_lim_fname = op.join(testing_path, "sample_audvis_trunc-meg-eeg-oct-4-fwd.fif")
 
 # Seed for the random number generator
 np.random.seed(42)
@@ -77,7 +79,7 @@ np.random.seed(42)
 # We'll use this function to generate our two signals.
 
 sfreq = 50  # Sampling frequency of the generated signal
-times = np.arange(10. * sfreq) / sfreq  # 10 seconds of signal
+times = np.arange(10.0 * sfreq) / sfreq  # 10 seconds of signal
 
 
 def coh_signal_gen():
@@ -90,7 +92,7 @@ def coh_signal_gen():
     """
     t_rand = 0.001  # Variation in the instantaneous frequency of the signal
     std = 0.1  # Std-dev of the random fluctuations added to the signal
-    base_freq = 10.  # Base frequency of the oscillators in Hertz
+    base_freq = 10.0  # Base frequency of the oscillators in Hertz
     n_times = len(times)
 
     # Generate an oscillator with varying frequency and phase lag.
@@ -116,28 +118,28 @@ plt.figure(figsize=(8, 4))
 # Plot the timeseries
 plt.subplot(221)
 plt.plot(times, signal1)
-plt.xlabel('Time (s)')
-plt.title('Signal 1')
+plt.xlabel("Time (s)")
+plt.title("Signal 1")
 plt.subplot(222)
 plt.plot(times, signal2)
-plt.xlabel('Time (s)')
-plt.title('Signal 2')
+plt.xlabel("Time (s)")
+plt.title("Signal 2")
 
 # Power spectrum of the first timeseries
 f, p = welch(signal1, fs=sfreq, nperseg=128, nfft=256)
 plt.subplot(223)
 plt.plot(f[:100], p[:100])  # Only plot the first 30 frequencies
-plt.xlabel('Frequency (Hz)')
-plt.ylabel('Power')
-plt.title('Power spectrum of signal 1')
+plt.xlabel("Frequency (Hz)")
+plt.ylabel("Power")
+plt.title("Power spectrum of signal 1")
 
 # Compute the coherence between the two timeseries
 f, coh = coherence(signal1, signal2, fs=sfreq, nperseg=100, noverlap=64)
 plt.subplot(224)
 plt.plot(f[:50], coh[:50])
-plt.xlabel('Frequency (Hz)')
-plt.ylabel('Coherence')
-plt.title('Coherence between the timeseries')
+plt.xlabel("Frequency (Hz)")
+plt.ylabel("Coherence")
+plt.title("Coherence between the timeseries")
 
 plt.tight_layout()
 
@@ -156,15 +158,15 @@ stc = mne.SourceEstimate(
     np.vstack((signal1, signal2)),  # The two signals
     vertices=[[source_vert1], [source_vert2]],  # Their locations
     tmin=0,
-    tstep=1. / sfreq,
-    subject='sample',  # We use the brain model of the MNE-Sample dataset
+    tstep=1.0 / sfreq,
+    subject="sample",  # We use the brain model of the MNE-Sample dataset
 )
 
 ###############################################################################
 # Before we simulate the sensor-level data, let's define a signal-to-noise
 # ratio. You are encouraged to play with this parameter and see the effect of
 # noise on our results.
-SNR = 1  # Signal-to-noise ratio. Decrease to add more noise.
+SNR = 5  # Signal-to-noise ratio. Decrease to add more noise.
 
 ###############################################################################
 # Now we run the signal through the forward model to obtain simulated sensor
@@ -175,12 +177,13 @@ SNR = 1  # Signal-to-noise ratio. Decrease to add more noise.
 fwd = mne.read_forward_solution(fwd_fname)
 
 # Use only gradiometers
-fwd = mne.pick_types_forward(fwd, meg='grad', eeg=False, exclude='bads')
+fwd = mne.pick_types_forward(fwd, meg="grad", eeg=False, exclude="bads")
 
 # Create an info object that holds information about the sensors (their
 # location, etc.).
-info = mne.create_info(fwd['info']['ch_names'], sfreq, ch_types='grad')
-info.update(fwd['info'])
+info = mne.create_info(fwd["info"]["ch_names"], sfreq, ch_types="grad")
+with info._unlock():
+    info.update(fwd["info"])
 
 # To simulate the data, we need a version of the forward solution where each
 # source has a "fixed" orientation, i.e. pointing orthogonally to the surface
@@ -208,16 +211,15 @@ sensor_data = SNR * sensor_data + noise
 # the signal of interest versus data that does not.
 epochs = mne.EpochsArray(
     data=np.concatenate(
-        (noise[np.newaxis, :, :],
-         sensor_data[np.newaxis, :, :]),
-        axis=0),
+        (noise[np.newaxis, :, :], sensor_data[np.newaxis, :, :]), axis=0
+    ),
     info=info,
     events=np.array([[0, 0, 1], [10, 0, 2]]),
     event_id=dict(noise=1, signal=2),
 )
 
 # Plot the simulated data
-epochs.plot()
+# epochs.plot()
 
 ###############################################################################
 # Power mapping
@@ -234,49 +236,61 @@ epochs.plot()
 # Computing the inverse using MNE-dSPM:
 
 # Estimating the noise covariance on the trial that only contains noise.
-cov = mne.compute_covariance(epochs['noise'])
+cov = mne.compute_covariance(epochs["noise"])
 inv = make_inverse_operator(epochs.info, fwd, cov)
 
 # Apply the inverse model to the trial that also contains the signal.
-s = apply_inverse(epochs['signal'].average(), inv)
+s = apply_inverse(epochs["signal"].average(), inv)
 
 # Take the root-mean square along the time dimension and plot the result.
-s_rms = (s ** 2).mean()
-brain = s_rms.plot('sample', subjects_dir=subjects_dir, hemi='both', figure=1,
-                   size=400)
+s_rms = (s**2).mean()
+brain = s_rms.plot(
+    "sample",
+    subjects_dir=subjects_dir,
+    hemi="both",
+    figure=1,
+    time_viewer=False,
+    size=400,
+    title="MNE-dSPM inverse (RMS)",
+)
 
 # Indicate the true locations of the source activity on the plot.
-brain.add_foci(source_vert1, coords_as_verts=True, hemi='lh')
-brain.add_foci(source_vert2, coords_as_verts=True, hemi='rh')
+brain.add_foci(source_vert1, coords_as_verts=True, hemi="lh")
+brain.add_foci(source_vert2, coords_as_verts=True, hemi="rh")
 
 # Rotate the view and add a title.
-mlab.view(0, 0, 550, [0, 0, 0])
-mlab.title('MNE-dSPM inverse (RMS)', height=0.9)
+brain.show_view(azimuth=0, elevation=0, distance=550, focalpoint=(0, 0, 0))
 
 ###############################################################################
 # Computing a cortical power map at 10 Hz. using a DICS beamformer:
 
 # Estimate the cross-spectral density (CSD) matrix on the trial containing the
 # signal.
-csd_signal = csd_morlet(epochs['signal'], frequencies=[10])
+csd_signal = csd_morlet(epochs["signal"], frequencies=[10])
 
-# Compute the DICS powermap. For this simulated dataset, we need a lot of
-# regularization for the beamformer to behave properly. For real recordings,
-# this amount of regularization is probably too much.
-filters = make_dics(epochs.info, fwd, csd_signal, reg=1, pick_ori='max-power')
+# Compute the DICS powermap.
+filters = make_dics(
+    epochs.info, fwd, csd_signal, inversion="single", pick_ori="max-power"
+)
 power, f = apply_dics_csd(csd_signal, filters)
 
 # Plot the DICS power map.
-brain = power.plot('sample', subjects_dir=subjects_dir, hemi='both', figure=2,
-                   size=400)
+brain = power.plot(
+    "sample",
+    subjects_dir=subjects_dir,
+    hemi="both",
+    figure=2,
+    time_viewer=False,
+    size=400,
+    title=f"DICS power map at {f[0]:.1f} Hz",
+)
 
 # Indicate the true locations of the source activity on the plot.
-brain.add_foci(source_vert1, coords_as_verts=True, hemi='lh')
-brain.add_foci(source_vert2, coords_as_verts=True, hemi='rh')
+brain.add_foci(source_vert1, coords_as_verts=True, hemi="lh")
+brain.add_foci(source_vert2, coords_as_verts=True, hemi="rh")
 
 # Rotate the view and add a title.
-mlab.view(0, 0, 550, [0, 0, 0])
-mlab.title('DICS power map at %.1f Hz' % f[0], height=0.9)
+brain.show_view(azimuth=0, elevation=0, distance=550, focalpoint=(0, 0, 0))
 
 ###############################################################################
 # Excellent! Both methods found our two simulated sources. Of course, with a
@@ -307,30 +321,36 @@ con = dics_connectivity(pairs, fwd_tan, csd_signal, reg=1)
 # To plot the result, we transform the :class:`conpy.VertexConnectivity` object
 # to an :class:`mne.SourceEstimate` object, where the "signal" at each point is
 # the coherence value.
-one_to_all = con.make_stc('sum', weight_by_degree=True)
+one_to_all = con.make_stc("sum", weight_by_degree=True)
 
 # Plot the coherence values on the cortex
-brain = one_to_all.plot('sample', subjects_dir=subjects_dir, hemi='both',
-                        figure=3, size=400)
+brain = one_to_all.plot(
+    "sample",
+    subjects_dir=subjects_dir,
+    hemi="both",
+    figure=3,
+    size=400,
+    time_viewer=False,
+    title="One-to-all coherence",
+)
 
 # Indicate the true locations of the source activity on the plot (in white)
-brain.add_foci(source_vert1, coords_as_verts=True, hemi='lh')
-brain.add_foci(source_vert2, coords_as_verts=True, hemi='rh')
+brain.add_foci(source_vert1, coords_as_verts=True, hemi="lh")
+brain.add_foci(source_vert2, coords_as_verts=True, hemi="rh")
 
 # Also indicate our chosen reference point (in red). First, we need to figure
 # out the vertex number of the point.
 n_lh_verts = len(power.vertices[0])
 if ref_point < n_lh_verts:
-    hemi = 'lh'
+    hemi = "lh"
     ref_vert = power.vertices[0][ref_point]
 else:
-    hemi = 'rh'
+    hemi = "rh"
     ref_vert = power.vertices[1][ref_point - n_lh_verts]
 brain.add_foci(ref_vert, coords_as_verts=True, hemi=hemi, color=(1, 0, 0))
 
-# Rotate the view and add a title.
-mlab.view(0, 0, 550, [0, 0, 0])
-mlab.title('One-to-all coherence', height=0.9)
+# Rotate the view
+brain.show_view(azimuth=0, elevation=0, distance=550, focalpoint=(0, 0, 0))
 
 ###############################################################################
 # We see a lot of coherence in the neighbourhood surrounding the reference
@@ -339,24 +359,30 @@ mlab.title('One-to-all coherence', height=0.9)
 #
 # Now, look what happens when we do the coherence computation again, but this
 # time we use the trial that contains only noise.
-csd_noise = csd_morlet(epochs['noise'], frequencies=[10])
+csd_noise = csd_morlet(epochs["noise"], frequencies=[10])
 con_noise = dics_connectivity(pairs, fwd_tan, csd_noise, reg=1)
-one_to_all_noise = con_noise.make_stc('sum', weight_by_degree=True)
+one_to_all_noise = con_noise.make_stc("sum", weight_by_degree=True)
 
 # Plot the coherence values on the cortex
-brain = one_to_all_noise.plot('sample', subjects_dir=subjects_dir, hemi='both',
-                              figure=4, size=400)
+brain = one_to_all_noise.plot(
+    "sample",
+    subjects_dir=subjects_dir,
+    hemi="both",
+    figure=4,
+    size=400,
+    time_viewer=False,
+    title="One-to-all coherence (noise)",
+)
 
 # Indicate the true locations of the source activity on the plot (in white)
-brain.add_foci(source_vert1, coords_as_verts=True, hemi='lh')
-brain.add_foci(source_vert2, coords_as_verts=True, hemi='rh')
+brain.add_foci(source_vert1, coords_as_verts=True, hemi="lh")
+brain.add_foci(source_vert2, coords_as_verts=True, hemi="rh")
 
 # Also indicate our chosen reference point (in red).
 brain.add_foci(ref_vert, coords_as_verts=True, hemi=hemi, color=(1, 0, 0))
 
-# Rotate the view and add a title.
-mlab.view(0, 0, 550, [0, 0, 0])
-mlab.title('One-to-all coherence (noise)', height=0.9)
+# Rotate the view
+brain.show_view(azimuth=0, elevation=0, distance=550, focalpoint=(0, 0, 0))
 
 ###############################################################################
 # While we no longer find a local maximum at the first source, we still see
@@ -370,19 +396,25 @@ mlab.title('One-to-all coherence (noise)', height=0.9)
 one_to_all_contrast = one_to_all - one_to_all_noise
 
 # Plot the coherence values on the cortex
-brain = one_to_all_contrast.plot('sample', subjects_dir=subjects_dir,
-                                 hemi='both', figure=5, size=400)
+brain = one_to_all_contrast.plot(
+    "sample",
+    subjects_dir=subjects_dir,
+    hemi="both",
+    figure=5,
+    size=400,
+    time_viewer=False,
+    title="One-to-all coherence (contrast)",
+)
 
 # Indicate the true locations of the source activity on the plot (in white)
-brain.add_foci(source_vert1, coords_as_verts=True, hemi='lh')
-brain.add_foci(source_vert2, coords_as_verts=True, hemi='rh')
+brain.add_foci(source_vert1, coords_as_verts=True, hemi="lh")
+brain.add_foci(source_vert2, coords_as_verts=True, hemi="rh")
 
 # Also indicate our chosen reference point (in red).
 brain.add_foci(ref_vert, coords_as_verts=True, hemi=hemi, color=(1, 0, 0))
 
-# Rotate the view and add a title.
-mlab.view(0, 0, 550, [0, 0, 0])
-mlab.title('One-to-all coherence (contrast)', height=0.9)
+# Rotate the view
+brain.show_view(azimuth=0, elevation=0, distance=550, focalpoint=(0, 0, 0))
 
 ###############################################################################
 # We now see the areas that have more coherence with the reference point during
@@ -407,43 +439,50 @@ mlab.title('One-to-all coherence (contrast)', height=0.9)
 fwd_lim = mne.read_forward_solution(fwd_lim_fname)
 
 # Restrict the forward model to gradiometers only
-fwd_lim = mne.pick_types_forward(fwd_lim, meg='grad', eeg=False,
-                                 exclude='bads')
+fwd_lim = mne.pick_types_forward(fwd_lim, meg="grad", eeg=False, exclude="bads")
 fwd_lim = forward_to_tangential(fwd_lim)
 
 ###############################################################################
 # To reduce the number of coherence computations even further, we're going to
 # ignore all connections that span less than 5 centimeters.
 pairs = all_to_all_connectivity_pairs(fwd_lim, min_dist=0.05)
-print('There are now %d connectivity pairs' % len(pairs[0]))
+print("There are now %d connectivity pairs" % len(pairs[0]))
 
 ###############################################################################
 # Compute coherence between all defined pairs using DICS. This connectivity
 # estimate will be dominated by local field spread effects, unless we make a
 # contrast between two conditions.
-con_noise = dics_connectivity(pairs, fwd_lim, csd_noise, reg=1)
-con_signal = dics_connectivity(pairs, fwd_lim, csd_signal, reg=1)
+con_noise = dics_connectivity(pairs, fwd_lim, csd_noise)
+con_signal = dics_connectivity(pairs, fwd_lim, csd_signal)
 con_contrast = con_signal - con_noise
 
-# Create a cortical map, where the "signal" at each point is the sum of the
-# coherence of all outgoing and incoming connections from and to that point.
-all_to_all = con_contrast.make_stc('sum', weight_by_degree=True)
+# Create a cortical map, where the "signal" at each point is the maximum
+# coherence across all outgoing and incoming connections from and to that
+# point.
+all_to_all = con_contrast.make_stc("absmax")
 
-brain = all_to_all.plot('sample', subjects_dir=subjects_dir, hemi='both',
-                        figure=6, size=400)
+brain = all_to_all.plot(
+    "sample",
+    subjects_dir=subjects_dir,
+    hemi="both",
+    figure=6,
+    size=400,
+    time_viewer=False,
+    clim=dict(kind="value", lims=(0.5, 0.8, 1)),
+    title="All-to-all coherence (contrast)",
+)
 
 # Indicate the true locations of the source activity on the plot.
-brain.add_foci(source_vert1, coords_as_verts=True, hemi='lh')
-brain.add_foci(source_vert2, coords_as_verts=True, hemi='rh')
+brain.add_foci(source_vert1, coords_as_verts=True, hemi="lh")
+brain.add_foci(source_vert2, coords_as_verts=True, hemi="rh")
 
-# Rotate the view and add a title.
-mlab.view(0, 0, 550, [0, 0, 0])
-mlab.title('All-to-all coherence (contrast)', height=0.9)
+# Rotate the view
+brain.show_view(azimuth=0, elevation=0, distance=550, focalpoint=(0, 0, 0))
 
 # Annotate the cortex with parcels from the "aparc" brain atlas provided by
 # FreeSurfer. This is to cross reference this plot with the connectivity
 # diagram we make later.
-brain.add_annotation('aparc')
+brain.add_annotation("aparc")
 
 ###############################################################################
 # We see that the areas surrounding our simulated sources increase their
@@ -457,17 +496,16 @@ brain.add_annotation('aparc')
 # you can cross-reference the labels with the atlas plotted on the cortex.
 
 # Load the parcels defined by "aparc"
-labels = mne.read_labels_from_annot('sample', 'aparc',
-                                    subjects_dir=subjects_dir)
+labels = mne.read_labels_from_annot("sample", "aparc", subjects_dir=subjects_dir)
 
 # Summarize the connectivity by choosing the strongest connection for each
 # parcel-to-parcel combination.
-p = con_contrast.parcellate(labels, 'absmax', weight_by_degree=False)
+p = con_contrast.parcellate(labels, "absmax", weight_by_degree=False)
 
 # Visualize the resulting connectivity summary using a connectivity diagram.
 # Show only the strongest connection.
 p.plot(n_lines=1, vmin=0, vmax=1)
-plt.title('Strongest parcel-to-parcel connection', color='white')
+plt.title("Strongest parcel-to-parcel connection", color="white")
 
 ###############################################################################
 # While each parcel-parcel combination has a non-zero coherence with each
@@ -490,4 +528,4 @@ plt.title('Strongest parcel-to-parcel connection', color='white')
 # .. [3] van Vliet, M., Liljeström, M., Aro, S., Salmelin, R. and Kujala, J.
 #    (2018). "Functional connectivity analysis using DICS: from raw MEG data to
 #    group-level statistics in Python". bioRxiv 245530.
-#    https://doi.org/10.1101/245530 
+#    https://doi.org/10.1101/245530

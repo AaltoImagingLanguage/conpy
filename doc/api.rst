@@ -45,6 +45,7 @@ Functions:
     dics_connectivity
     one_to_all_connectivity_pairs
     read_connectivity
+    dics_coherence_external
 
 
 Statistics

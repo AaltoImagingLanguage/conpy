@@ -30,3 +30,5 @@ paper/conpy-v*.pdf
 conpy/tests/.coverage
 conpy/tests/htmlcov
 conpy.egg-info
+.coverage
+junit-results.xml

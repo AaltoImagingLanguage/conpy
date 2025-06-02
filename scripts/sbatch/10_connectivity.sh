@@ -36,7 +36,7 @@ SUBJECT=${SUBJECTS[$SLURM_ARRAY_TASK_ID - 1]}
 LOG_FILE=logs/$SUBJECT-connectivity.log
 
 # Load the python environment
-module load anaconda3
+module load anaconda
 
 # Tell BLAS to only use a single thread
 export OMP_NUM_THREADS=1

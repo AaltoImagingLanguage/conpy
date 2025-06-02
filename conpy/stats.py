@@ -1,18 +1,18 @@
 # encoding: utf-8
-"""
-Statistics for Connectivity objects.
+"""Statistics for Connectivity objects.
 
 Authors: Susanna Aro <susanna.aro@aalto.fi>
          Marijn van Vliet <w.m.vanvliet@gmail.com>
 """
+
 from warnings import warn
 
 import numpy as np
+from mne.parallel import parallel_func
+from mne.utils import ProgressBar, logger, verbose
 from scipy import stats
 from scipy.cluster.hierarchy import fclusterdata
 from scipy.stats import ttest_1samp
-from mne.parallel import parallel_func
-from mne.utils import logger, verbose, ProgressBar
 
 # from .connectivity import VertexConnectivity
 from .connectivity import VertexConnectivity
@@ -43,16 +43,19 @@ def group_connectivity_ttest(cond1, cond2, df=None, tail=None):
         p-values for all connections.
     """
     if len(cond1) != len(cond2):
-        raise ValueError('The number of subjects in each condition must be '
-                         'the same.')
+        raise ValueError(
+            "The number of subjects in each condition must be " "the same."
+        )
     n_subjects = len(cond1)
 
     # Check compatibility of the connection objects
     pairs1 = cond1[0].pairs
     for con in cond1[1:] + cond2:
         if not np.array_equal(pairs1, con.pairs):
-            raise ValueError('Not all Connectivity objects have the same '
-                             'connection pairs defined.')
+            raise ValueError(
+                "Not all Connectivity objects have the same "
+                "connection pairs defined."
+            )
 
     # Perform a paired t-test
     X1 = np.array([con.data for con in cond1])
@@ -64,9 +67,9 @@ def group_connectivity_ttest(cond1, cond2, df=None, tail=None):
 
     if tail is not None:
         # Scipy gives out only two-tailed p-values
-        if tail == 'right':
+        if tail == "right":
             pval = stats.t.cdf(-t, df)
-        elif tail == 'left':
+        elif tail == "left":
             pval = stats.t.cdf(t, df)
         else:
             raise ValueError('Tail must be "right", "left" or None.')
@@ -74,8 +77,9 @@ def group_connectivity_ttest(cond1, cond2, df=None, tail=None):
 
 
 @verbose
-def cluster_threshold(con, src, min_size=20, max_spread=0.013,
-                      method='single', verbose=None):
+def cluster_threshold(
+    con, src, min_size=20, max_spread=0.013, method="single", verbose=None
+):
     """Threshold connectivity using clustering.
 
     First, connections are grouped into "bundles". A bundle is a group of
@@ -109,15 +113,17 @@ def cluster_threshold(con, src, min_size=20, max_spread=0.013,
     thresholded_connectivity : instance of Connectivity
         Instance of connectivity with the thresholded data.
     """
-    grid_points = np.vstack([s['rr'][v] for s, v in zip(src, con.vertices)])
+    grid_points = np.vstack([s["rr"][v] for s, v in zip(src, con.vertices)])
     X = np.hstack([grid_points[inds] for inds in con.pairs])
-    clust_no = fclusterdata(X, max_spread, criterion='distance', method=method)
+    clust_no = fclusterdata(X, max_spread, criterion="distance", method=method)
 
     # Remove clusters that do not pass the threshold
     clusters, counts = np.unique(clust_no, return_counts=True)
     big_clusters = clusters[counts >= min_size]
-    logger.info('Found %d bundles, of which %d are of sufficient size.' %
-                (len(clusters), len(big_clusters)))
+    logger.info(
+        "Found %d bundles, of which %d are of sufficient size."
+        % (len(clusters), len(big_clusters))
+    )
 
     # Restrict the connections to only those found in the big bundles
     mask = np.in1d(clust_no, big_clusters)
@@ -129,15 +135,26 @@ def cluster_threshold(con, src, min_size=20, max_spread=0.013,
         pairs=pairs,
         vertices=con.vertices,
         vertex_degree=con.source_degree,
-        subject=con.subject
+        subject=con.subject,
     )
 
 
 @verbose
-def cluster_permutation_test(cond1, cond2, cluster_threshold, src, alpha=0.05,
-                             tail=0, n_permutations=1024, max_spread=0.013,
-                             cluster_method='single', seed=None,
-                             return_details=False, n_jobs=1, verbose=None):
+def cluster_permutation_test(
+    cond1,
+    cond2,
+    cluster_threshold,
+    src,
+    alpha=0.05,
+    tail=0,
+    n_permutations=1024,
+    max_spread=0.013,
+    cluster_method="single",
+    seed=None,
+    return_details=False,
+    n_jobs=1,
+    verbose=None,
+):
     """Find significant bundles of connections using a permutation test.
 
     This is a variation on the cluster permutation test described in [1]_.
@@ -236,19 +253,29 @@ def cluster_permutation_test(cond1, cond2, cluster_threshold, src, alpha=0.05,
            bioRxiv, 245530, 1-25. https://doi.org/10.1101/245530
     """
     if len(cond1) != len(cond2):
-        raise ValueError('The number of subjects in each condition must be '
-                         'the same.')
+        raise ValueError(
+            "The number of subjects in each condition must be " "the same."
+        )
     n_subjects = len(cond1)
 
     # Check compatibility of the connection objects
     for con in cond1 + cond2:
         if not isinstance(con, VertexConnectivity):
-            raise ValueError('All connectivity objects must by of type '
-                             'VertexConnectivity.')
+            raise ValueError(
+                "All connectivity objects must by of type " "VertexConnectivity."
+            )
 
         if not np.array_equal(con.pairs, cond1[0].pairs):
-            raise ValueError('Not all Connectivity objects have the same '
-                             'connection pairs defined.')
+            raise ValueError(
+                "Not all Connectivity objects have the same "
+                "connection pairs defined."
+            )
+
+    if tail not in [-1, 0, 1]:
+        raise ValueError(
+            "The `tail` parameter should be -1, 0, or 1, but the "
+            "value {} was supplied".format(tail)
+        )
 
     # Create pairwise contrast. We'll do a t-test against the null hypothesis
     # that the mean of this contrast is zero. This is equivalent to a paired
@@ -257,40 +284,48 @@ def cluster_permutation_test(cond1, cond2, cluster_threshold, src, alpha=0.05,
 
     # Get the XYZ coordinates for the vertices between which the connectivity
     # is defined.
-    grid_points = np.vstack([s['rr'][v]
-                             for s, v in zip(src, cond1[0].vertices)])
+    grid_points = np.vstack([s["rr"][v] for s, v in zip(src, cond1[0].vertices)])
     grid_points = np.hstack([grid_points[inds] for inds in cond1[0].pairs])
 
-    logger.info('Forming initial bundles of connectivity...')
+    logger.info("Forming initial bundles of connectivity...")
     _, bundles, bundle_ts = _do_single_permutation(
-        Xs, cluster_threshold, tail, grid_points, max_spread, cluster_method,
-        return_bundles=True
+        Xs,
+        cluster_threshold,
+        tail,
+        grid_points,
+        max_spread,
+        cluster_method,
+        return_bundles=True,
     )
     if len(bundle_ts) == 0:
-        warn('No clusters found, returning empty connectivity_indices')
+        warn("No clusters found, returning empty connectivity_indices")
         if return_details:
             return [], [], [], []
         else:
             return []
     else:
-        logger.info('Retained %d connections, grouped into %d bundles.' %
-                    (np.sum([len(b) for b in bundles]), len(bundles)))
+        logger.info(
+            "Retained %d connections, grouped into %d bundles."
+            % (np.sum([len(b) for b in bundles]), len(bundles))
+        )
 
-    parallel, my_perm_func, _ = parallel_func(_do_single_permutation, n_jobs,
-                                              verbose=verbose)
+    parallel, my_perm_func, _ = parallel_func(
+        _do_single_permutation, n_jobs, verbose=verbose
+    )
 
-    logger.info('Permuting %d times...' % n_permutations)
+    logger.info("Permuting %d times..." % n_permutations)
     rng = np.random.RandomState(seed)
 
     # We are doing random permutations using sign flips
-    sign_flips = [rng.choice([-1, 1], size=n_subjects)[:, np.newaxis]
-                  for _ in range(n_permutations)]
+    sign_flips = [
+        rng.choice([-1, 1], size=n_subjects)[:, np.newaxis]
+        for _ in range(n_permutations)
+    ]
 
     def permutations():
-        """Generator for the permutations with optional progress bar."""
+        """Generate permutations with optional progress bar."""
         if verbose:
-            progress = ProgressBar(len(sign_flips),
-                                   mesg='Performing permutations')
+            progress = ProgressBar(len(sign_flips), mesg="Performing permutations")
             for i, sign_flip in enumerate(sign_flips):
                 progress.update(i)
                 yield sign_flip
@@ -300,8 +335,14 @@ def cluster_permutation_test(cond1, cond2, cluster_threshold, src, alpha=0.05,
 
     # Compute the random permutation stats
     perm_stats = parallel(
-        my_perm_func(Xs * sign_flip, cluster_threshold, tail, grid_points,
-                     max_spread, cluster_method)
+        my_perm_func(
+            Xs * sign_flip,
+            cluster_threshold,
+            tail,
+            grid_points,
+            max_spread,
+            cluster_method,
+        )
         for sign_flip in permutations()
     )
     H0 = np.concatenate(perm_stats)
@@ -316,9 +357,10 @@ def cluster_permutation_test(cond1, cond2, cluster_threshold, src, alpha=0.05,
     else:
         connection_indices = []
 
-    logger.info('Found %d bundles with significant p-values, containing in '
-                'total %d connections.' %
-                (len(significant_bundles), len(connection_indices)))
+    logger.info(
+        "Found %d bundles with significant p-values, containing in "
+        "total %d connections." % (len(significant_bundles), len(connection_indices))
+    )
 
     if return_details:
         return connection_indices, bundles, bundle_ts, bundle_ps, H0
@@ -326,8 +368,15 @@ def cluster_permutation_test(cond1, cond2, cluster_threshold, src, alpha=0.05,
         return connection_indices
 
 
-def _do_single_permutation(Xs, cluster_threshold, tail, grid_points,
-                           max_spread, cluster_method, return_bundles=False):
+def _do_single_permutation(
+    Xs,
+    cluster_threshold,
+    tail,
+    grid_points,
+    max_spread,
+    cluster_method,
+    return_bundles=False,
+):
     """Perform a single clustering permutation.
 
     Parameters
@@ -379,8 +428,10 @@ def _do_single_permutation(Xs, cluster_threshold, tail, grid_points,
         masks = [t < -cluster_threshold]
     elif tail == 0:
         masks = [t < -cluster_threshold, t >= cluster_threshold]
-    if tail == 1:
+    elif tail == 1:
         masks = [t >= cluster_threshold]
+    else:
+        raise ValueError("Invalid value for the `tail` parameter.")
 
     for mask in masks:
         n_connections = mask.sum()
@@ -393,9 +444,12 @@ def _do_single_permutation(Xs, cluster_threshold, tail, grid_points,
             bundle_ts = t[mask]
         else:
             # Cluster the connections into bundles
-            clust_no = fclusterdata(grid_points[mask], max_spread,
-                                    criterion='distance',
-                                    method=cluster_method)
+            clust_no = fclusterdata(
+                grid_points[mask],
+                max_spread,
+                criterion="distance",
+                method=cluster_method,
+            )
             # Cluster numbers start at 1, which trips up np.bincount()
             clust_no -= 1
             bundle_ts = np.bincount(clust_no, t[mask])
@@ -407,8 +461,7 @@ def _do_single_permutation(Xs, cluster_threshold, tail, grid_points,
 
         if return_bundles:
             all_bundles.extend(
-                _cluster_assignment_to_list_of_lists(np.flatnonzero(mask),
-                                                     clust_no)
+                _cluster_assignment_to_list_of_lists(np.flatnonzero(mask), clust_no)
             )
             all_bundle_ts.append(bundle_ts)
 

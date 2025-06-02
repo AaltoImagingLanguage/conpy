@@ -1,18 +1,18 @@
-import pytest
 import numpy as np
-from numpy.testing import assert_array_equal
+import pytest
 from conpy.utils import reg_pinv
+from numpy.testing import assert_array_equal
 
 
 def testreg_pinv():
     """Test regularization and inversion of covariance matrix."""
     # create rank-deficient array
-    a = np.array([[1., 0., 1.], [0., 1., 0.], [1., 0., 1.]])
+    a = np.array([[1.0, 0.0, 1.0], [0.0, 1.0, 0.0], [1.0, 0.0, 1.0]])
 
     # Test if rank-deficient matrix without regularization throws
     # specific warning
-    with pytest.warns(RuntimeWarning, match='deficient'):
-        reg_pinv(a, reg=0.)
+    with pytest.warns(RuntimeWarning, match="deficient"):
+        reg_pinv(a, reg=0.0)
 
     # Test inversion with explicit rank
     a_inv_np = np.linalg.pinv(a)

@@ -60,6 +60,7 @@ parameters that were supplied along with the request:
 
 Author: Marijn van Vliet <w.m.vanvliet@gmail.com>
 """
+
 import string
 
 
@@ -76,8 +77,8 @@ class FileNames(object):
         """
         files = dict()
         for name, value in self.__dict__.items():
-            public_methods = ['list_filenames', 'add']
-            if not name.startswith('_') and name not in public_methods:
+            public_methods = ["list_filenames", "add"]
+            if not name.startswith("_") and name not in public_methods:
                 files[name] = value
         return files
 
@@ -106,8 +107,7 @@ class FileNames(object):
             if len(placeholders) == 0:
                 self._add_fname(alias, fname)  # Plain string filename
             else:
-                prefilled = _prefill_placeholders(placeholders, self.files(),
-                                                  dict())
+                prefilled = _prefill_placeholders(placeholders, self.files(), dict())
                 if len(prefilled) == len(placeholders):
                     # The template could be completely pre-filled. Add the
                     # result as a plain string filename.
@@ -122,6 +122,7 @@ class FileNames(object):
 
     def _add_template(self, alias, template):
         """Add a filename that is a string containing placeholders."""
+
         # Construct a function that will do substitution for any placeholders
         # in the template.
         def fname(**kwargs):
@@ -132,6 +133,7 @@ class FileNames(object):
 
     def _add_function(self, alias, func):
         """Add a filename that is computed using a user-specified function."""
+
         # Construct a function that will call the user supplied function with
         # the proper arguments. We prepend 'self' so the user supplied function
         # has easy access to all the filepaths.
@@ -155,8 +157,11 @@ def _get_placeholders(template):
     placeholders : list of str
         The list of placeholder names that were found in the template string.
     """
-    return [p[1] for p in string.Formatter().parse(template)
-            if p[1] is not None and len(p[1]) > 0]
+    return [
+        p[1]
+        for p in string.Formatter().parse(template)
+        if p[1] is not None and len(p[1]) > 0
+    ]
 
 
 def _substitute(template, files, user_values):
@@ -186,8 +191,7 @@ def _substitute(template, files, user_values):
     placeholders = _get_placeholders(template)
 
     # Pre-fill placeholders based on existing file aliases
-    placeholder_values = _prefill_placeholders(placeholders, files,
-                                               user_values)
+    placeholder_values = _prefill_placeholders(placeholders, files, user_values)
 
     # Add user specified values for the placeholders
     placeholder_values.update(**user_values)
@@ -197,8 +201,10 @@ def _substitute(template, files, user_values):
     needed = set(placeholders)
     missing = needed - provided
     if len(missing) > 0:
-        raise ValueError('Cannot construct filename, because the following '
-                         'parameters are missing: %s' % missing)
+        raise ValueError(
+            "Cannot construct filename, because the following "
+            "parameters are missing: %s" % missing
+        )
 
     # Do the substitution
     return template.format(**placeholder_values)
