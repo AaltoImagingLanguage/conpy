@@ -221,7 +221,7 @@ class BaseConnectivity(object):
             mask = crit < thresh
         else:
             raise ValueError(
-                'The direction parameter must be either "above" ' 'or "below".'
+                'The direction parameter must be either "above" or "below".'
             )
 
         if copy:
@@ -406,9 +406,7 @@ class VertexConnectivity(BaseConnectivity):
         self, data, pairs, vertices, vertex_degree=None, subject=None, directed=False
     ):
         if len(vertices) != 2:
-            raise ValueError(
-                "The `vertices` parameter should be a list of " "two arrays."
-            )
+            raise ValueError("The `vertices` parameter should be a list of two arrays.")
 
         self.vertices = [np.asarray(v) for v in vertices]
         n_vertices = len(self.vertices[0]) + len(self.vertices[1])
@@ -483,7 +481,7 @@ class VertexConnectivity(BaseConnectivity):
 
         else:
             raise ValueError(
-                'The summary parameter must be "degree", or ' '"sum", or "absmax".'
+                'The summary parameter must be "degree", or "sum", or "absmax".'
             )
 
         data = np.asarray(data, dtype="float").ravel()
@@ -587,8 +585,7 @@ class VertexConnectivity(BaseConnectivity):
                     return np.abs(c[f, :][:, t]).max()
         elif not isinstance(summary, types.FunctionType):
             raise ValueError(
-                'The summary parameter must be "degree", "sum" '
-                '"absmax" or a function.'
+                'The summary parameter must be "degree", "sum" "absmax" or a function.'
             )
 
         logger.info("Computing out- and in-degree for each label...")
@@ -1245,7 +1242,7 @@ def dics_connectivity(
 
     if n_orient == 1:
         raise ValueError(
-            "A forward operator with free or tangential " "orientation must be used."
+            "A forward operator with free or tangential orientation must be used."
         )
     elif n_orient == 3:
         # Convert forward to tangential orientation for more speed.
@@ -1347,19 +1344,39 @@ def dics_coherence_external(csd, dics, external=None):
     Return
     ------
     stc_coh : SourceEstimate | list of SourceEstimates
-        Coherence between all source vertices and external signal(s).
+        Coherence between all source vertices and external signal(s). If there are
+        multiple external signals, this will be a list containing the coherence with
+        each external signal.
     """
     source_power, _ = apply_dics_csd(csd, dics)
+    meg_sensors = np.setdiff1d(np.arange(csd.n_channels), external)
+    freqs = csd.frequencies
+    coherences = np.zeros((len(external), dics["n_sources"], len(freqs)))
+
     source_power = source_power.data[:, 0]
     csd_data = csd.get_data()
     psd = np.diag(csd_data).real
     external_power = psd[-1]
     source_csd = dics["weights"][0].dot(csd_data[:-1, -1])
 
-    coherence = source_csd**2 / (source_power * external_power)
+    for i in range(0, len(freqs)):
+        source_power_d = source_power.data[:, i]
+        csd_data = csd.get_data(index=i)
 
-    stc_coh = SourceEstimate(
-        coherence[:, np.newaxis], vertices=dics["vertices"], tmin=0, tstep=1
-    )
+        psd = np.diag(csd_data).real
+        external_power = psd[external]
 
-    return stc_coh
+        source_csd = dics["weights"][i].dot(
+            dics["whitener"] @ csd_data[meg_sensors, :][:, external]
+        )
+
+        coherence = np.abs(source_csd) ** 2 / (source_power_d[:, None] * external_power)
+        coherences[:, :, i] = coherence
+
+    stcs = list()
+    for coh in coherences:
+        stcs.append(SourceEstimate(coh, vertices=dics["vertices"], tmin=0, tstep=1))
+    if len(stcs) == 1:
+        return stcs[0]
+    else:
+        return stcs
