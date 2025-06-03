@@ -19,6 +19,7 @@ from mne import (
     pick_channels_forward,
 )
 from mne.beamformer import apply_dics_csd
+from mne.io.pick import _picks_to_idx
 from mne.parallel import parallel_func
 from mne.source_estimate import _make_stc
 from mne.source_space._source_space import (
@@ -1322,7 +1323,7 @@ def dics_connectivity(
     )
 
 
-def dics_coherence_external(csd, dics, external=None):
+def dics_coherence_external(csd, dics, info, external=None):
     """Compute coherence between source level MEG and external signal(s).
 
     Parameters
@@ -1332,14 +1333,15 @@ def dics_coherence_external(csd, dics, external=None):
         and the external signals.
     dics : Beamformer
         DICS beamformer to compute source power.
-    external : str | list | slice | None
+    info : Info
+        The sensor information.
+    external : str | list of str | None
         Channels to use as external signal. Slices and lists of integers will
         be interpreted as channel indices. In lists, channel type strings
         (e.g., ['misc','emg']) will pick channels of those types, channel name
         strings (e.g.,['MISC0001', 'EMG001'] will pick the given channels. Can
         also be the string value "all" to pick all channels, or "data" to pick
-        data channels. None (default) will pick all channels that are not MEG
-        or EEG channels.
+        data channels. None (default) will pick all channels of type EMG or MISC.
 
     Return
     ------
@@ -1349,29 +1351,30 @@ def dics_coherence_external(csd, dics, external=None):
         each external signal.
     """
     source_power, _ = apply_dics_csd(csd, dics)
-    meg_sensors = np.setdiff1d(np.arange(csd.n_channels), external)
+    picks_external = [
+        csd.ch_names.index(info["chs"][i]["ch_name"])
+        for i in _picks_to_idx(info, external, none=["emg", "misc"])
+    ]
+    picks_sensors = [
+        csd.ch_names.index(info["chs"][i]["ch_name"])
+        for i in _picks_to_idx(info, ["eeg", "meg"])
+    ]
     freqs = csd.frequencies
-    coherences = np.zeros((len(external), dics["n_sources"], len(freqs)))
-
-    source_power = source_power.data[:, 0]
-    csd_data = csd.get_data()
-    psd = np.diag(csd_data).real
-    external_power = psd[-1]
-    source_csd = dics["weights"][0].dot(csd_data[:-1, -1])
+    coherences = np.zeros((len(picks_external), dics["n_sources"], len(freqs)))
 
     for i in range(0, len(freqs)):
         source_power_d = source_power.data[:, i]
         csd_data = csd.get_data(index=i)
 
         psd = np.diag(csd_data).real
-        external_power = psd[external]
+        external_power = psd[picks_external]
 
         source_csd = dics["weights"][i].dot(
-            dics["whitener"] @ csd_data[meg_sensors, :][:, external]
+            dics["whitener"] @ csd_data[picks_sensors, :][:, picks_external]
         )
 
         coherence = np.abs(source_csd) ** 2 / (source_power_d[:, None] * external_power)
-        coherences[:, :, i] = coherence
+        coherences[:, :, i] = coherence.T
 
     stcs = list()
     for coh in coherences:

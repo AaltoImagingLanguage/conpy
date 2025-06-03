@@ -13,7 +13,8 @@ source.
 
 .. _coherent: https://en.wikipedia.org/wiki/Coherence_(signal_processing)
 """
-# Author: Marijn van Vliet <w.m.vanvliet@gmail.com>
+# Authors: Marijn van Vliet <w.m.vanvliet@gmail.com>
+#          Maria Hakonen <maria.hakonen@gmail.com>
 #
 # License: BSD (3-clause)
 
@@ -23,27 +24,24 @@ source.
 # We first import the required packages to run this tutorial and define a list
 # of filenames for various things we'll be using.
 import os.path as op
-import numpy as np
-from scipy.signal import welch, coherence
-from mayavi import mlab
-from matplotlib import pyplot as plt
 
 import mne
+import numpy as np
+from conpy import dics_coherence_external
+from matplotlib import pyplot as plt
+from mne.beamformer import apply_dics_csd, make_dics
 from mne.datasets import sample
 from mne.time_frequency import csd_morlet
-from mne.beamformer import make_dics, apply_dics_csd
-from conpy import dics_coherence_external
-
-from conpy import dics_coherence_external
+from scipy.signal import coherence, welch
 
 # We use the MEG and MRI setup from the MNE-sample dataset
 data_path = sample.data_path(download=False)
-subjects_dir = op.join(data_path, 'subjects')
-mri_path = op.join(subjects_dir, 'sample')
+subjects_dir = op.join(data_path, "subjects")
+mri_path = op.join(subjects_dir, "sample")
 
 # Filenames for various files we'll be using
-meg_path = op.join(data_path, 'MEG', 'sample')
-fwd_fname = op.join(meg_path, 'sample_audvis-meg-eeg-oct-6-fwd.fif')
+meg_path = op.join(data_path, "MEG", "sample")
+fwd_fname = op.join(meg_path, "sample_audvis-meg-eeg-oct-6-fwd.fif")
 
 # Setup the random number generator
 rng = np.random.RandomState(42)
@@ -57,7 +55,7 @@ rng = np.random.RandomState(42)
 # We'll use this function to generate our two signals.
 
 sfreq = 50  # Sampling frequency of the generated signal
-times = np.arange(10. * sfreq) / sfreq  # 10 seconds of signal
+times = np.arange(10.0 * sfreq) / sfreq  # 10 seconds of signal
 
 
 def coh_signal_gen():
@@ -70,7 +68,7 @@ def coh_signal_gen():
     """
     t_rand = 0.001  # Variation in the instantaneous frequency of the signal
     std = 0.1  # Std-dev of the random fluctuations added to the signal
-    base_freq = 10.  # Base frequency of the oscillators in Hertz
+    base_freq = 10.0  # Base frequency of the oscillators in Hertz
     n_times = len(times)
 
     # Generate an oscillator with varying frequency and phase lag.
@@ -96,28 +94,28 @@ plt.figure(figsize=(8, 4))
 # Plot the timeseries
 plt.subplot(221)
 plt.plot(times, signal1)
-plt.xlabel('Time (s)')
-plt.title('Signal 1')
+plt.xlabel("Time (s)")
+plt.title("Signal 1")
 plt.subplot(222)
 plt.plot(times, signal2)
-plt.xlabel('Time (s)')
-plt.title('Signal 2')
+plt.xlabel("Time (s)")
+plt.title("Signal 2")
 
 # Power spectrum of the first timeseries
 f, p = welch(signal1, fs=sfreq, nperseg=128, nfft=256)
 plt.subplot(223)
 plt.plot(f[:100], p[:100])  # Only plot the first 30 frequencies
-plt.xlabel('Frequency (Hz)')
-plt.ylabel('Power')
-plt.title('Power spectrum of signal 1')
+plt.xlabel("Frequency (Hz)")
+plt.ylabel("Power")
+plt.title("Power spectrum of signal 1")
 
 # Compute the coherence between the two timeseries
 f, coh = coherence(signal1, signal2, fs=sfreq, nperseg=100, noverlap=64)
 plt.subplot(224)
 plt.plot(f[:50], coh[:50])
-plt.xlabel('Frequency (Hz)')
-plt.ylabel('Coherence')
-plt.title('Coherence between the timeseries')
+plt.xlabel("Frequency (Hz)")
+plt.ylabel("Coherence")
+plt.title("Coherence between the timeseries")
 
 plt.tight_layout()
 
@@ -135,8 +133,8 @@ stc = mne.SourceEstimate(
     np.atleast_2d(signal1),  # The signal
     vertices=[[source_vert], []],  # Its location
     tmin=0,
-    tstep=1. / sfreq,
-    subject='sample',  # We use the brain model of the MNE-Sample dataset
+    tstep=1.0 / sfreq,
+    subject="sample",  # We use the brain model of the MNE-Sample dataset
 )
 
 ###############################################################################
@@ -154,14 +152,17 @@ SNR = 1  # Signal-to-noise ratio. Decrease to add more noise.
 fwd = mne.read_forward_solution(fwd_fname)
 
 # Use only gradiometers
-fwd = mne.pick_types_forward(fwd, meg='grad', eeg=False)
+fwd = mne.pick_types_forward(fwd, meg="grad", eeg=False)
 
 # Create an info object that holds information about the sensors (their
 # location, etc.). Make sure to include the external sensor!
-info = mne.create_info(fwd['info']['ch_names'] + ['external'], sfreq,
-                       ch_types=['grad'] * fwd['info']['nchan'] + ['misc'])
+info = mne.create_info(
+    fwd["info"]["ch_names"] + ["external"],
+    sfreq,
+    ch_types=["grad"] * fwd["info"]["nchan"] + ["misc"],
+)
 # Copy grad positions from the forward solution
-for info_ch, fwd_ch in zip(info['chs'], fwd['info']['chs']):
+for info_ch, fwd_ch in zip(info["chs"], fwd["info"]["chs"]):
     info_ch.update(fwd_ch)
 
 # To simulate the data, we need a version of the forward solution where each
@@ -195,9 +196,8 @@ sensor_data = np.vstack((sensor_data, np.atleast_2d(signal2)))
 #
 epochs = mne.EpochsArray(
     data=np.concatenate(
-        (noise[np.newaxis, :, :],
-         sensor_data[np.newaxis, :, :]),
-        axis=0),
+        (noise[np.newaxis, :, :], sensor_data[np.newaxis, :, :]), axis=0
+    ),
     info=info,
     events=np.array([[0, 0, 1], [10, 0, 2]]),
     event_id=dict(noise=1, signal=2),
@@ -206,7 +206,7 @@ epochs = mne.EpochsArray(
 ###############################################################################
 # Let's take a look at the stimulated data. Scroll all the way down to find the
 # simulated external sensor.
-epochs.plot(['grad', 'misc'])  # By default, misc channels are not plotted
+epochs.plot(["grad", "misc"])  # By default, misc channels are not plotted
 
 ###############################################################################
 # Power mapping
@@ -217,24 +217,23 @@ epochs.plot(['grad', 'misc'])  # By default, misc channels are not plotted
 
 # Estimate the cross-spectral density (CSD) matrix on the trial containing the
 # signal.
-csd_signal = csd_morlet(epochs['signal'], frequencies=[10])
+csd_signal = csd_morlet(epochs["signal"], frequencies=[10])
 
-# Compute the DICS power map. For this simulated dataset, we need a lot of
-# regularization for the beamformer to behave properly. For real recordings,
-# this amount of regularization is probably too much.
-dics = make_dics(epochs.info, fwd, csd_signal, reg=1, pick_ori='max-power')
+# Compute the DICS power map. For this simulated dataset, we need to use
+# ``inversion="single"`` for the beamformer to behave properly. For real recordings,
+# setting ``inversion="matrix"`` should be possible as well.
+dics = make_dics(epochs.info, fwd, csd_signal, inversion="single", pick_ori="max-power")
 power, f = apply_dics_csd(csd_signal, dics)
 
 # Plot the DICS power map.
-brain = power.plot('sample', subjects_dir=subjects_dir, hemi='both', figure=2,
-                   size=400)
+brain = power.plot("sample", subjects_dir=subjects_dir, hemi="both", figure=2, size=400)
 
 # Indicate the true location of the source activity on the plot.
-brain.add_foci(source_vert, coords_as_verts=True, hemi='lh')
+brain.add_foci(source_vert, coords_as_verts=True, hemi="lh")
 
 # Rotate the view and add a title.
-mlab.view(0, 0, 550, [0, 0, 0])#
-mlab.title('DICS power map at %.1f Hz' % f[0], height=0.9)
+brain.show_view("frontal")
+brain.add_text(0.5, 0.9, f"DICS power map at {f[0]:.1f} Hz", justification="center")
 
 ###############################################################################
 # You can clearly see where our simulated source is in the brain. Now, let's
@@ -256,19 +255,18 @@ mlab.title('DICS power map at %.1f Hz' % f[0], height=0.9)
 # The diagonal of this CSD matrix contains the power for each sensor, which we
 # can use to compute the denominator of the equation.
 
-csd_signal = csd_morlet(epochs['signal'], frequencies=[10],
-                        picks=['grad', 'misc'])
-csd_signal.plot(mode='coh')
+csd_signal = csd_morlet(epochs["signal"], frequencies=[10], picks=["grad", "misc"])
+csd_signal.plot(mode="coh")
 csd_data = csd_signal.get_data(10)
 diag_data = np.diag(csd_data)
 
 # plot coherence
 psd = np.diag(csd_data).real
-coh = np.abs(csd_data)**2 / psd[np.newaxis, :] / psd[:, np.newaxis]
+coh = np.abs(csd_data) ** 2 / psd[np.newaxis, :] / psd[:, np.newaxis]
 plt.imshow(coh)
 
 # plot topomap of coherence
-info_grads = mne.pick_info(info, mne.pick_types(info, meg='grad'))
+info_grads = mne.pick_info(info, mne.pick_types(info, meg="grad"))
 mne.viz.plot_topomap(coh[:-1, -1], info_grads)
 
 ###############################################################################
@@ -281,15 +279,16 @@ mne.viz.plot_topomap(coh[:-1, -1], info_grads)
 #  2. Project the gradiometer CSD to the cortical surface to compute the
 #     denominator of the equation.
 #
-stc_coh = dics_coherence_external(csd_signal, dics)
-brain = stc_coh.plot('sample', subjects_dir=subjects_dir, hemi='both')
+dics = make_dics(epochs.info, fwd, csd_signal, reg=1, pick_ori="max-power")
+stc_coh = dics_coherence_external(csd_signal, dics, info, external="external")
+brain = stc_coh.plot("sample", subjects_dir=subjects_dir, hemi="both")
 
 # Indicate the true location of the source activity on the plot.
-brain.add_foci(source_vert, coords_as_verts=True, hemi='lh')
+brain.add_foci(source_vert, coords_as_verts=True, hemi="lh")
 
 # Rotate the view and add a title.
-mlab.view(0, 0, 550, [0, 0, 0])
-mlab.title('Coherence with external sensor', height=0.9)
+brain.show_view("frontal")
+brain.add_text(0.5, 0.9, "Coherence with external sensor", justification="center")
 
 ###############################################################################
 # References
@@ -301,4 +300,4 @@ mlab.title('Coherence with external sensor', height=0.9)
 # .. [2] van Vliet, M., Liljeström, M., Aro, S., Salmelin, R. and Kujala, J.
 #    (2018). "Functional connectivity analysis using DICS: from raw MEG data to
 #    group-level statistics in Python". bioRxiv 245530.
-#    https://doi.org/10.1101/245530 
+#    https://doi.org/10.1101/245530
