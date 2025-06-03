@@ -279,7 +279,7 @@ mne.viz.plot_topomap(coh[:-1, -1], info_grads)
 #  2. Project the gradiometer CSD to the cortical surface to compute the
 #     denominator of the equation.
 #
-dics = make_dics(epochs.info, fwd, csd_signal, reg=1, pick_ori="max-power")
+dics = make_dics(epochs.info, fwd, csd_signal, reg=1, depth=1, pick_ori="max-power")
 stc_coh = dics_coherence_external(csd_signal, dics, info, external="external")
 brain = stc_coh.plot("sample", subjects_dir=subjects_dir, hemi="both")
 

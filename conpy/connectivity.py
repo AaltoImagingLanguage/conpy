@@ -1349,6 +1349,13 @@ def dics_coherence_external(csd, dics, info, external=None):
         Coherence between all source vertices and external signal(s). If there are
         multiple external signals, this will be a list containing the coherence with
         each external signal.
+
+    References
+    ----------
+    .. [1] Gross, J., Kujala, J., Hamalainen, M., Timmermann, L., Schnitzler,
+           A., & Salmelin, R. (2001). Dynamic imaging of coherent sources:
+           Studying neural interactions in the human brain. Proceedings of the
+           National Academy of Sciences, 98(2), 694–699.
     """
     source_power, _ = apply_dics_csd(csd, dics)
     picks_external = [
@@ -1374,14 +1381,19 @@ def dics_coherence_external(csd, dics, info, external=None):
         n_sources = W.shape[0] // n_orient
         Wk = W.reshape(n_sources, n_orient, W.shape[1])
 
+        # Gross et al. 2001 formula 6
         source_csd = (
             Wk @ dics["whitener"] @ csd_data[picks_sensors, :][:, picks_external]
         )
         source_csd = np.trace(source_csd, axis1=1, axis2=2)
 
+        # Gross et al. 2001 formula 9
         coherence = np.abs(source_csd[:, None]) ** 2 / (
             source_power_d[:, None] * external_power
         )
+        # coherence = np.abs(source_csd[:, None]) / np.sqrt(
+        #     source_power_d[:, None] * external_power
+        # )
         coherences[:, :, i] = coherence.T
 
     stcs = list()
