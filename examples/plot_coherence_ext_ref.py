@@ -222,7 +222,7 @@ csd_signal = csd_morlet(epochs["signal"], frequencies=[10])
 # Compute the DICS power map. For this simulated dataset, we need to use
 # ``inversion="single"`` for the beamformer to behave properly. For real recordings,
 # setting ``inversion="matrix"`` should be possible as well.
-dics = make_dics(epochs.info, fwd, csd_signal, inversion="single", pick_ori="max-power")
+dics = make_dics(epochs.info, fwd, csd_signal, inversion="single")
 power, f = apply_dics_csd(csd_signal, dics)
 
 # Plot the DICS power map.

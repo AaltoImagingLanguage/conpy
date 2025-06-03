@@ -1369,11 +1369,19 @@ def dics_coherence_external(csd, dics, info, external=None):
         psd = np.diag(csd_data).real
         external_power = psd[picks_external]
 
-        source_csd = dics["weights"][i].dot(
-            dics["whitener"] @ csd_data[picks_sensors, :][:, picks_external]
-        )
+        W = dics["weights"][i]
+        n_orient = 3 if dics["is_free_ori"] else 1
+        n_sources = W.shape[0] // n_orient
+        Wk = W.reshape(n_sources, n_orient, W.shape[1])
 
-        coherence = np.abs(source_csd) ** 2 / (source_power_d[:, None] * external_power)
+        source_csd = (
+            Wk @ dics["whitener"] @ csd_data[picks_sensors, :][:, picks_external]
+        )
+        source_csd = np.trace(source_csd, axis1=1, axis2=2)
+
+        coherence = np.abs(source_csd[:, None]) ** 2 / (
+            source_power_d[:, None] * external_power
+        )
         coherences[:, :, i] = coherence.T
 
     stcs = list()
