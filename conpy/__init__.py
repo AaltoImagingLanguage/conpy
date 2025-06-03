@@ -19,4 +19,4 @@ from .forward import (
 )
 from .stats import cluster_permutation_test, cluster_threshold, group_connectivity_ttest
 
-__version__ = "1.3.2"
+__version__ = "1.4-dev"
