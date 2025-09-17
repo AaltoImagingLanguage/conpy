@@ -1398,7 +1398,8 @@ def dics_coherence_external(csd, dics, info, external=None):
 
     stcs = list()
     for coh in coherences:
-        stcs.append(SourceEstimate(coh, vertices=dics["vertices"], tmin=0, tstep=1))
+        stcs.append(SourceEstimate(coh, vertices=dics["vertices"],
+                                   tmin=freqs[0], tstep=freqs[1] - freqs[0],))
     if len(stcs) == 1:
         return stcs[0]
     else:
