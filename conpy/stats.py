@@ -126,7 +126,7 @@ def cluster_threshold(
     )
 
     # Restrict the connections to only those found in the big bundles
-    mask = np.in1d(clust_no, big_clusters)
+    mask = np.isin(clust_no, big_clusters)
     data = con.data[mask]
     pairs = [p[mask] for p in con.pairs]
 

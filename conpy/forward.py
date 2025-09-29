@@ -322,8 +322,8 @@ def restrict_src_to_vertices(
             vert_no_lh, vert_no_rh = vertno_or_idx
             if check_vertno:
                 if not (
-                    np.all(np.in1d(vert_no_lh, src[0]["vertno"]))
-                    and np.all(np.in1d(vert_no_rh, src[1]["vertno"]))
+                    np.all(np.isin(vert_no_lh, src[0]["vertno"]))
+                    and np.all(np.isin(vert_no_rh, src[1]["vertno"]))
                 ):
                     raise ValueError(
                         "One or more vertices were not present in" " SourceSpaces."
@@ -518,7 +518,7 @@ def forward_to_tangential(fwd, center=None):
     # Compute two dipole directions tangential to a sphere that has its origin
     # in the center of the brain.
     if center is None:
-        _, center = _fit_sphere(fwd["source_rr"], disp=False)
+        _, center = _fit_sphere(fwd["source_rr"])
         _, tan1, tan2 = _make_radial_coord_system(fwd["source_rr"], center)
 
     # Make sure the forward solution is in head orientation for this
