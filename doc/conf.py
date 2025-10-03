@@ -15,6 +15,7 @@ serve to show the default.
 
 import mne.viz._brain
 import conpy
+from intersphinx_registry import get_intersphinx_mapping
 from numpydoc import docscrape, numpydoc  # noqa
 
 # -- General configuration ------------------------------------------------
@@ -162,12 +163,12 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    "python": ("https://docs.python.org/3/", None),
     "mne": ("https://mne.tools/stable/", None),
-    "conpy": ("https://users.aalto.fi/~vanvlm1/conpy/", None),
-    "numpy": ("https://docs.scipy.org/doc/numpy/", None),
-    "scipy": ("https://scipy.github.io/devdocs", None),
 }
+intersphinx_mapping.update(
+    get_intersphinx_mapping(packages={"matplotlib", "numpy", "python", "scipy"})
+)
+
 
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",
@@ -175,4 +176,6 @@ sphinx_gallery_conf = {
     "backreferences_dir": "generated",
     "image_scrapers": ["matplotlib", mne.viz._brain._BrainScraper()],
     "reference_url": dict(mne=None),
+    "filename_pattern": r".*\.py",
+    "within_subsection_order": "FileNameSortKey",
 }

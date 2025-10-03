@@ -98,6 +98,7 @@ class _BaseConnectivity(object):
             self.source_degree = np.asarray(_compute_degree(pairs, n_sources))
 
     def __repr__(self):
+        """Obtain a string representation."""
         return "<{}  |  n_sources={}, n_conns={}, subject={}>".format(
             self.__class__.__name__, self.n_sources, self.n_connections, self.subject
         )
@@ -212,7 +213,7 @@ class _BaseConnectivity(object):
             mask = crit < thresh
         else:
             raise ValueError(
-                'The direction parameter must be either "above" ' 'or "below".'
+                'The direction parameter must be either "above" or "below".'
             )
 
         if copy:
@@ -397,9 +398,7 @@ class VertexConnectivity(_BaseConnectivity):
         self, data, pairs, vertices, vertex_degree=None, subject=None, directed=False
     ):
         if len(vertices) != 2:
-            raise ValueError(
-                "The `vertices` parameter should be a list of " "two arrays."
-            )
+            raise ValueError("The `vertices` parameter should be a list of two arrays.")
 
         self.vertices = [np.asarray(v) for v in vertices]
         n_vertices = len(self.vertices[0]) + len(self.vertices[1])
@@ -420,7 +419,7 @@ class VertexConnectivity(_BaseConnectivity):
         summary : 'sum' | 'degree' | 'absmax'
             How to summarize the adjacency data:
 
-            'sum' : sum the strenghts of both the incoming and outgoing connections
+            'sum' : sum the strengths of both the incoming and outgoing connections
                     for each source.
             'degree': count the number of incoming and outgoing connections for each
                       source.
@@ -474,7 +473,7 @@ class VertexConnectivity(_BaseConnectivity):
 
         else:
             raise ValueError(
-                'The summary parameter must be "degree", or ' '"sum", or "absmax".'
+                'The summary parameter must be "degree", or "sum", or "absmax".'
             )
 
         data = np.asarray(data, dtype="float").ravel()
@@ -578,8 +577,7 @@ class VertexConnectivity(_BaseConnectivity):
                     return np.abs(c[f, :][:, t]).max()
         elif not isinstance(summary, types.FunctionType):
             raise ValueError(
-                'The summary parameter must be "degree", "sum" '
-                '"absmax" or a function.'
+                'The summary parameter must be "degree", "sum" "absmax" or a function.'
             )
 
         logger.info("Computing out- and in-degree for each label...")
@@ -1001,7 +999,7 @@ def one_to_all_connectivity_pairs(src_or_fwd, ref_point, min_dist=0):
     -------
     vert_from : ndarray, shape (n_pairs,)
         For each pair, the index of the first vertex. This is always the index
-        of the refence point.
+        of the reference point.
     vert_to : ndarray, shape (n_pairs,)
         For each pair, the index of the second vertex.
 
@@ -1236,7 +1234,7 @@ def dics_connectivity(
 
     if n_orient == 1:
         raise ValueError(
-            "A forward operator with free or tangential " "orientation must be used."
+            "A forward operator with free or tangential orientation must be used."
         )
     elif n_orient == 3:
         # Convert forward to tangential orientation for more speed.

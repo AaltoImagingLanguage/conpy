@@ -326,7 +326,7 @@ def restrict_src_to_vertices(
                     and np.all(np.isin(vert_no_rh, src[1]["vertno"]))
                 ):
                     raise ValueError(
-                        "One or more vertices were not present in" " SourceSpaces."
+                        "One or more vertices were not present in SourceSpaces."
                     )
 
     else:
@@ -404,9 +404,9 @@ def _make_radial_coord_system(points, origin):
     Parameters
     ----------
     points : ndarray, shape (n_points, 3)
-        For each point, the XYZ carthesian coordinates.
+        For each point, the XYZ Cartesian coordinates.
     origin : (x, y, z)
-        A tuple (or other array-like) containing the XYZ carthesian coordinates
+        A tuple (or other array-like) containing the XYZ Cartesian coordinates
         of the point of origin. This can for example be the center of a sphere
         fitted through the points.
 
@@ -497,7 +497,7 @@ def forward_to_tangential(fwd, center=None):
     fwd : instance of Forward
         The forward solution to convert.
     center : tuple of float (x, y, z) | None
-        The carthesian coordinates of the center of the brain. By default, a
+        The Cartesian coordinates of the center of the brain. By default, a
         sphere is fitted through all the points in the source space.
 
     Returns
@@ -512,7 +512,7 @@ def forward_to_tangential(fwd, center=None):
 
     if fwd["sol"]["ncol"] // n_sources == 2:
         raise ValueError(
-            "Forward solution already seems to be in tangential " "orientation."
+            "Forward solution already seems to be in tangential orientation."
         )
 
     # Compute two dipole directions tangential to a sphere that has its origin
