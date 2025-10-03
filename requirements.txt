@@ -11,4 +11,4 @@ h5io
 pytest>=3.2
 sphinx
 sphinx_gallery>=0.1
-sphinx_bootstrap_theme>=0.6
+pydata_sphinx_theme
