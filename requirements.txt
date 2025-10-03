@@ -4,6 +4,7 @@ doit>=0.30
 setuptools>=61.0
 matplotlib>=1.5
 mne>=1.0
+nibabel
 tqdm
 h5py
 h5io
