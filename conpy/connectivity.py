@@ -18,6 +18,7 @@ from mne import (
     SourceSpaces,
     pick_channels_forward,
 )
+from mne.forward import convert_forward_solution
 from mne.beamformer import apply_dics_csd
 from mne.io.pick import _picks_to_idx
 from mne.parallel import parallel_func
@@ -32,7 +33,7 @@ from mne.utils import copy_function_doc_to_method_doc, logger, verbose
 from scipy import sparse
 from scipy.spatial.distance import cdist, pdist
 
-from .forward import forward_to_tangential
+from .forward import forward_to_tangential, _make_radial_coord_system
 from .utils import reg_pinv
 from .viz import plot_connectivity
 
@@ -1120,6 +1121,8 @@ def _compute_dics_coherence(
     """
     power_from_inv = spec_power_inv[vert_ind_from]
     power_to_inv = spec_power_inv[vert_ind_to]
+    assert power_from_inv.shape == (len(vert_ind_from), 2, 2)
+    print(power_from_inv.shape)
 
     if numba_enabled:
         power_cross_inv = _compute_power_cross_inv(
@@ -1323,7 +1326,8 @@ def dics_connectivity(
     )
 
 
-def dics_coherence_external(csd, dics, info, external=None):
+def dics_coherence_external(csd, dics, info, fwd, external=None, maximize=False,
+                            n_angles=100, center=None, method='pca'):
     """Compute coherence between source level MEG and external signal(s).
 
     Parameters
@@ -1335,13 +1339,35 @@ def dics_coherence_external(csd, dics, info, external=None):
         DICS beamformer to compute source power.
     info : Info
         The sensor information.
+    fwd : Forward
+        The forward solution that was used to compute the DICS beamformer.
     external : str | list of str | None
         Channels to use as external signal. Slices and lists of integers will
         be interpreted as channel indices. In lists, channel type strings
         (e.g., ['misc','emg']) will pick channels of those types, channel name
         strings (e.g.,['MISC0001', 'EMG001'] will pick the given channels. Can
         also be the string value "all" to pick all channels, or "data" to pick
-        data channels. None (default) will pick all channels of type EMG or MISC.
+        data channels. None (default) will pick all channels of type EMG or
+        MISC.
+    maximize : bool
+        Whether to maximize the coherence over dipole orientations. If True,
+        the coherence is computed for a range of dipole orientations and the
+        maximum value is taken. If True, the DICS beamformer weights must have
+        been calculated in a free orientation source space with single
+        inversion. Defaults to False.
+    n_angles : int
+        Number of evenly spaced angles to try when maximizing dipole
+        orientations. Only used if maximize is True. Defaults to 100.
+    center : tuple of float (x, y, z) | None
+        The carthesian coordinates of the center of the brain. By default, a
+        sphere is fitted through all the points in the source space. Ignored
+        if method='pca'.
+    method : 'geometric' | 'pca'
+        Method to compute the tangential directions. Method 'geometric' will
+        fit a sphere through all the points in the source space and compute
+        the tangential directions based on the normal to the sphere. Method
+        'pca' will compute pseudo-tangential directions along the first two
+        lead field principal directions. Defaults to 'pca'.
 
     Return
     ------
@@ -1357,7 +1383,6 @@ def dics_coherence_external(csd, dics, info, external=None):
            Studying neural interactions in the human brain. Proceedings of the
            National Academy of Sciences, 98(2), 694–699.
     """
-    source_power, _ = apply_dics_csd(csd, dics)
     picks_external = [
         csd.ch_names.index(info["chs"][i]["ch_name"])
         for i in _picks_to_idx(info, external, none=["emg", "misc"])
@@ -1367,34 +1392,102 @@ def dics_coherence_external(csd, dics, info, external=None):
         for i in _picks_to_idx(info, ["eeg", "meg"])
     ]
     freqs = csd.frequencies
+
+    if not dics['is_free_ori']:
+        n_orient = 1
+    elif len(dics['source_nn']) // dics['n_sources'] == 2:
+        raise ValueError("Forward solution must be in free orientation. The "
+                         "provided forward solution seems to be in tangential "
+                         "orientation.")
+    elif len(dics['source_nn']) // dics['n_sources'] == 3:
+        n_orient = 3
+    else:
+        raise ValueError("Invalid source_nn in dics beamformer.")
+
+    if maximize:
+        if n_orient != 3:
+            raise ValueError(
+                "DICS beamformer weights must be computed in a free orientation "
+                "source space when using the maximize option."
+            )
+        if dics['inversion'] != 'single':
+            raise ValueError(
+                "DICS beamformer weights must be computed using single "
+                "inversion when using the maximize option."
+            )
+
     coherences = np.zeros((len(picks_external), dics["n_sources"], len(freqs)))
-
+    if not maximize:
+        source_power, _ = apply_dics_csd(csd, dics)
     for i in range(0, len(freqs)):
-        source_power_d = source_power.data[:, i]
         csd_data = csd.get_data(index=i)
-
         psd = np.diag(csd_data).real
         external_power = psd[picks_external]
-
         W = dics["weights"][i]
-        n_orient = 3 if dics["is_free_ori"] else 1
+        whitener = dics["whitener"]
         n_sources = W.shape[0] // n_orient
-        Wk = W.reshape(n_sources, n_orient, W.shape[1])
-
+        n_sensors = W.shape[1]
+        Wk = W.reshape(n_sources, n_orient, n_sensors)
         # Gross et al. 2001 formula 6
         source_csd = (
-            Wk @ dics["whitener"] @ csd_data[picks_sensors, :][:, picks_external]
+            Wk @ whitener @ csd_data[picks_sensors, :][:, picks_external]
         )
-        source_csd = np.trace(source_csd, axis1=1, axis2=2)
+        if maximize:
+            # Create an optimization grid
+            n_grid = n_angles
+            angles = np.arange(n_grid) * np.pi / n_grid
+            orientations = np.column_stack((np.sin(angles), np.cos(angles)))
 
-        # Gross et al. 2001 formula 9
-        coherence = np.abs(source_csd[:, None]) ** 2 / (
-            source_power_d[:, None] * external_power
-        )
-        # coherence = np.abs(source_csd[:, None]) / np.sqrt(
-        #     source_power_d[:, None] * external_power
-        # )
-        coherences[:, :, i] = coherence.T
+            # Make sure the forward solution is in head orientation for this
+            fwd_out = convert_forward_solution(fwd, surf_ori=False, copy=True)
+
+            # Find tangential directions
+            _, tan1, tan2 = _make_radial_coord_system(fwd_out, origin=center,
+                                                      method=method)
+            tangential_basis = np.stack((tan1, tan2), axis=1)
+            orientations = orientations @ tangential_basis
+
+            # Whiten the MEG CSD
+            Cs = csd_data[picks_sensors, :][:, picks_sensors]
+            Cs = whitener @ Cs @ whitener.conj().T
+
+            # Calculate source power for all sources and orientations
+            source_power = (Wk @ Cs @ Wk.conj().transpose(0, 2, 1)).real
+            # Regularize if the condition number is large
+            # u, s, vh = np.linalg.svd(source_power, full_matrices=False)
+            # s[s[:, 0]/s[:, 1] > 100][:, 1] = s[s[:, 0]/s[:, 1] > 100][:,
+            #                                  0] / 100.
+            # source_power = (u * s[:, None, :]) @ vh
+
+            # Calculate coherence for all sources and orientations
+            num = (np.abs(orientations @ source_csd) ** 2)
+            denom = (np.sum(orientations @ source_power * orientations,
+                            axis=-1)[..., None]
+                     * external_power)
+            coherence = num / denom
+
+            # Take the maximum coherence over orientations
+            coherences[:, :, i] = np.max(coherence, axis=1).T
+        else:
+            source_power_d = source_power.data[:, i]
+            # Gross et al. 2001 formula 9
+            source_csd = np.sum(source_csd, axis=1)
+
+            # Gross et al. 2001 formula 9
+            coherence = np.abs(source_csd) ** 2 / (
+                source_power_d[:, None] * external_power
+            )
+            # coherence = np.abs(source_csd[:, None]) / np.sqrt(
+            #     source_power_d[:, None] * external_power
+            # )
+            coherences[:, :, i] = coherence.T
+
+    tmin, tstep = 1.0, 1.0
+    if len(freqs) > 1:
+        diff = np.diff(freqs)
+        if np.allclose(diff, diff[0]):
+            tstep = diff[0]
+            tmin = freqs[0]
 
     stcs = list()
     for coh in coherences:
@@ -1402,8 +1495,8 @@ def dics_coherence_external(csd, dics, info, external=None):
             SourceEstimate(
                 coh,
                 vertices=dics["vertices"],
-                tmin=freqs[0],
-                tstep=freqs[1] - freqs[0] if len(freqs) > 1 else 1,
+                tmin=tmin,
+                tstep=tstep
             )
         )
     if len(stcs) == 1:
