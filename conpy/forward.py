@@ -393,23 +393,32 @@ def restrict_forward_to_sensor_range(fwd, dist, picks=None, verbose=None):
     return restrict_forward_to_vertices(fwd, vertno, verbose=verbose)
 
 
-def _make_radial_coord_system(points, origin):
+def _make_radial_coord_system(fwd, origin=None, method='geometric'):
     """Compute a radial coordinate system at the given points.
 
-    For each point X, a set of three unit vectors is computed that point along
-    the axes of a radial coordinate system. The first axis of the coordinate
-    system is in the direction of the line between X and the origin point. The
-    second and third axes are perpendicular to the first axis.
+    For each point X in a source space, a set of three unit vectors is computed
+    that point along the axes of a radial or pseudo-radial coordinate system. If
+    method='geometric', the first axis of the coordinate system is in the
+    direction of the line between X and the origin point. The second and third
+    axes are perpendicular to the first axis. If method='pca', the first axis
+    is in the direction of the last principal direction of the lead field at X.
+    The second and third axes are the so-called pseudo-tangential directions
+    with maximal contribution to the lead field.
 
     Parameters
     ----------
-    points : ndarray, shape (n_points, 3)
-        For each point, the XYZ carthesian coordinates.
+    fwd : Forward
+        The forward solution that contains the lead field information.
     origin : (x, y, z)
         A tuple (or other array-like) containing the XYZ carthesian coordinates
         of the point of origin. This can for example be the center of a sphere
         fitted through the points.
-
+    method : 'geometric' | 'pca'
+        Method to compute the tangential directions. Method 'geometric' will
+        fit a sphere through all the points in the source space and compute
+        the tangential directions based on the normal to the sphere. Method
+        'pca' will compute pseudo-tangential directions along the first two
+        lead field principal directions. Defaults to 'pca'.
     Returns
     -------
     radial : ndarray, shape (n_points, 3)
@@ -423,13 +432,34 @@ def _make_radial_coord_system(points, origin):
         For each point, a unit vector perpendicular to both ``radial`` and
         ``tan1``. This is the third axis of the coordinate system.
     """
-    radial = points - origin
-    radial /= np.linalg.norm(radial, axis=1)[:, np.newaxis]
-    theta = _cart_to_sph(radial)[:, 1]
+    if method == 'geometric':
+        # Compute two dipole directions tangential to a sphere that has its origin
+        # in the center of the brain.
+        points = fwd["source_rr"]
+        if origin is None:
+            _, origin = _fit_sphere(points)
+        radial = points - origin
+        radial /= np.linalg.norm(radial, axis=1)[:, np.newaxis]
+        theta = _cart_to_sph(radial)[:, 1]
 
-    # Compute tangential directions
-    tan1 = np.vstack((-np.sin(theta), np.cos(theta), np.zeros(len(points)))).T
-    tan2 = np.cross(radial, tan1)
+        # Compute tangential directions
+        tan1 = np.vstack((-np.sin(theta),
+                          np.cos(theta),
+                          np.zeros(len(points)))).T
+        tan2 = np.cross(radial, tan1)
+    elif method == 'pca':
+        # Compute two dipole directions along the first two principal directions
+        # of the lead field at each vertex.
+        G = fwd["sol"]["data"].reshape(fwd['nchan'],
+                                       fwd['nsource'],
+                                       3)
+        G = G.transpose(1, 0, 2)  # (n_sources, n_channels, 3)
+        _, _, Vh = np.linalg.svd(G, full_matrices=False)
+        tan1 = Vh[:, 0, :]
+        tan2 = Vh[:, 1, :]
+        radial = Vh[:, 2, :]
+    else:
+        raise ValueError("Method must be either 'geometric' or 'pca'.")
 
     return radial, tan1, tan2
 
@@ -485,12 +515,14 @@ def _plot_coord_system(points, dim1, dim2, dim3, scale=0.001, n_ori=3):
     return f
 
 
-def forward_to_tangential(fwd, center=None):
+def forward_to_tangential(fwd, center=None, method='geometric'):
     """Convert a free orientation forward solution to a tangential one.
 
-    Places two source dipoles at each vertex that are oriented tangentially to
-    a sphere with its origin at the center of the brain. Recomputes the forward
-    model according to the new dipoles.
+    Places two source dipoles at each vertex that are oriented either
+    tangentially to a sphere with its origin at the center of the brain
+    (method='geometric') or pseudotangentially along the first two lead field
+    principal directions (method='pca'). Recomputes the forward model according
+    to the new dipoles.
 
     Parameters
     ----------
@@ -498,7 +530,11 @@ def forward_to_tangential(fwd, center=None):
         The forward solution to convert.
     center : tuple of float (x, y, z) | None
         The carthesian coordinates of the center of the brain. By default, a
-        sphere is fitted through all the points in the source space.
+        sphere is fitted through all the points in the source space. Ignored
+        if method='pca'.
+    method : str
+        Method to compute the tangential directions. Can be either 'geometric'
+        or 'pca'. Default is 'geometric'.
 
     Returns
     -------
@@ -515,15 +551,12 @@ def forward_to_tangential(fwd, center=None):
             "Forward solution already seems to be in tangential " "orientation."
         )
 
-    # Compute two dipole directions tangential to a sphere that has its origin
-    # in the center of the brain.
-    if center is None:
-        _, center = _fit_sphere(fwd["source_rr"], disp=False)
-        _, tan1, tan2 = _make_radial_coord_system(fwd["source_rr"], center)
-
     # Make sure the forward solution is in head orientation for this
     fwd_out = convert_forward_solution(fwd, surf_ori=False, copy=True)
     G = fwd_out["sol"]["data"].reshape(n_channels, n_sources, 3)
+
+    # Compute the new dipole orientations
+    _, tan1, tan2 = _make_radial_coord_system(fwd, origin=center, method=method)
 
     # Compute the forward solution for the new dipoles
     Phi = np.einsum("ijk,ljk->ijl", G, [tan1, tan2])
