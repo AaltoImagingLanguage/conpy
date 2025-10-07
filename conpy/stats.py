@@ -43,9 +43,7 @@ def group_connectivity_ttest(cond1, cond2, df=None, tail=None):
         p-values for all connections.
     """
     if len(cond1) != len(cond2):
-        raise ValueError(
-            "The number of subjects in each condition must be " "the same."
-        )
+        raise ValueError("The number of subjects in each condition must be the same.")
     n_subjects = len(cond1)
 
     # Check compatibility of the connection objects
@@ -53,8 +51,7 @@ def group_connectivity_ttest(cond1, cond2, df=None, tail=None):
     for con in cond1[1:] + cond2:
         if not np.array_equal(pairs1, con.pairs):
             raise ValueError(
-                "Not all Connectivity objects have the same "
-                "connection pairs defined."
+                "Not all Connectivity objects have the same connection pairs defined."
             )
 
     # Perform a paired t-test
@@ -126,7 +123,7 @@ def cluster_threshold(
     )
 
     # Restrict the connections to only those found in the big bundles
-    mask = np.in1d(clust_no, big_clusters)
+    mask = np.isin(clust_no, big_clusters)
     data = con.data[mask]
     pairs = [p[mask] for p in con.pairs]
 
@@ -177,7 +174,7 @@ def cluster_permutation_test(
         experimental condition. Each connectivity object should define the same
         connections.
     cluster_threshold : float
-        The threshold to use for forming the intial bundles. Only connections
+        The threshold to use for forming the initial bundles. Only connections
         with a t-value that is either higher than ``cluster_threshold`` or
         lower than ``-cluster_threshold`` are kept.
     tail : -1 | 0 | 1
@@ -236,7 +233,7 @@ def cluster_permutation_test(
         Only returned when ``return_details=True`` is specified.
     bundle_ps : ndarray, shape (n_bundles,) (optional)
         For each found bundle, the p-value based on the permutation test,
-        indicative for the likelyhood that the null-hypothesis holds.
+        indicative for the likelihood that the null-hypothesis holds.
         Only returned when ``return_details=True`` is specified.
     H0 : ndarray, shape (n_permutations,) (optional)
         The maximum observed t-value during each random permutation.
@@ -253,22 +250,19 @@ def cluster_permutation_test(
            bioRxiv, 245530, 1-25. https://doi.org/10.1101/245530
     """
     if len(cond1) != len(cond2):
-        raise ValueError(
-            "The number of subjects in each condition must be " "the same."
-        )
+        raise ValueError("The number of subjects in each condition must be the same.")
     n_subjects = len(cond1)
 
     # Check compatibility of the connection objects
     for con in cond1 + cond2:
         if not isinstance(con, VertexConnectivity):
             raise ValueError(
-                "All connectivity objects must by of type " "VertexConnectivity."
+                "All connectivity objects must by of type VertexConnectivity."
             )
 
         if not np.array_equal(con.pairs, cond1[0].pairs):
             raise ValueError(
-                "Not all Connectivity objects have the same "
-                "connection pairs defined."
+                "Not all Connectivity objects have the same connection pairs defined."
             )
 
     if tail not in [-1, 0, 1]:
@@ -382,7 +376,7 @@ def _do_single_permutation(
     Parameters
     ----------
     Xs : ndarray, shape(n_subjects, n_connections)
-        The connectivity data: a constrast between two conditions.
+        The connectivity data: a contrast between two conditions.
     cluster_threshold : float
         The initial t-value threshold to prune connections.
     tail : -1 | 0 | 1
