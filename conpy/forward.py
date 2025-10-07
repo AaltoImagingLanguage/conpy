@@ -107,7 +107,6 @@ def select_vertices_in_sensor_range(
                 raise ValueError("No head->MRI transform.")
 
         src_trans = invert_transform(_ensure_trans(trans, "head", "mri"))
-        print("Transform!")
     else:
         src_trans = Transform("head", "head")  # Identity transform
 

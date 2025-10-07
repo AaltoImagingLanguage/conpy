@@ -1121,8 +1121,6 @@ def _compute_dics_coherence(
     """
     power_from_inv = spec_power_inv[vert_ind_from]
     power_to_inv = spec_power_inv[vert_ind_to]
-    assert power_from_inv.shape == (len(vert_ind_from), 2, 2)
-    print(power_from_inv.shape)
 
     if numba_enabled:
         power_cross_inv = _compute_power_cross_inv(
