@@ -28,7 +28,7 @@ from .utils import reg_pinv
 from .viz import plot_connectivity
 
 
-class BaseConnectivity(object):
+class _BaseConnectivity(object):
     """Base class for connectivity objects.
 
     Contains implementation of methods that are defined for all connectivity
@@ -253,7 +253,7 @@ class BaseConnectivity(object):
             Whether the given connectivity object is compatible with this one.
         """
         return (
-            isinstance(other, BaseConnectivity)
+            isinstance(other, _BaseConnectivity)
             and other.n_sources == self.n_sources
             and np.array_equal(other.pairs, self.pairs)
         )
@@ -357,7 +357,7 @@ def _compute_degree(pairs, n_sources):
     return out_degree, in_degree
 
 
-class VertexConnectivity(BaseConnectivity):
+class VertexConnectivity(_BaseConnectivity):
     """Estimation of connectivity between vertices.
 
     Parameters
@@ -716,7 +716,7 @@ class VertexConnectivity(BaseConnectivity):
         )
 
 
-class LabelConnectivity(BaseConnectivity):
+class LabelConnectivity(_BaseConnectivity):
     """Estimation of all-to-all connectivity, parcellated into labels.
 
     Parameters
