@@ -28,7 +28,7 @@ from .utils import reg_pinv
 from .viz import plot_connectivity
 
 
-class _BaseConnectivity(object):
+class BaseConnectivity(object):
     """Base class for connectivity objects.
 
     Contains implementation of methods that are defined for all connectivity
@@ -253,7 +253,7 @@ class _BaseConnectivity(object):
             Whether the given connectivity object is compatible with this one.
         """
         return (
-            isinstance(other, _BaseConnectivity)
+            isinstance(other, BaseConnectivity)
             and other.n_sources == self.n_sources
             and np.array_equal(other.pairs, self.pairs)
         )
@@ -357,7 +357,7 @@ def _compute_degree(pairs, n_sources):
     return out_degree, in_degree
 
 
-class VertexConnectivity(_BaseConnectivity):
+class VertexConnectivity(BaseConnectivity):
     """Estimation of connectivity between vertices.
 
     Parameters
@@ -716,7 +716,7 @@ class VertexConnectivity(_BaseConnectivity):
         )
 
 
-class LabelConnectivity(_BaseConnectivity):
+class LabelConnectivity(BaseConnectivity):
     """Estimation of all-to-all connectivity, parcellated into labels.
 
     Parameters
@@ -1072,7 +1072,7 @@ def _compute_dics_coherence(
     vert_ind_from,
     vert_ind_to,
     spec_power_inv,
-    angles,
+    orientations,
     coh_metric="absolute",
 ):
     """Compute the coherence between two sources using a DICS beamformer.
@@ -1092,10 +1092,10 @@ def _compute_dics_coherence(
     vert_ind_to : ndarray, shape (n_pairs,)
         For each vertex-pair to compute the connectivity for, the index of the
         second vertex.
-    spec_power_inv : ndarray, shape (n_sources, n_orient)
+    spec_power_inv : ndarray, shape (n_sources, n_orient, n_orient)
         Inverse of cross-spectral power between the dipoles at each source
         location.
-    angles : ndarray, shape (n_orient, n_angles)
+    orientations : ndarray, shape (n_orient, n_angles)
         For each angle to try, a unit vector pointing in the direction of the
         angle.
     coh_metric : 'absolute' | 'imaginary'
@@ -1109,10 +1109,6 @@ def _compute_dics_coherence(
         For each vertex-pair, the coherence in the direction of maximum
         coherence.
     """
-    n_sensors, n_sources, n_orient = G.shape
-
-    assert spec_power_inv.shape == (n_sources, n_orient)
-
     power_from_inv = spec_power_inv[vert_ind_from]
     power_to_inv = spec_power_inv[vert_ind_to]
 
@@ -1121,40 +1117,30 @@ def _compute_dics_coherence(
             W, G.astype("complex"), vert_ind_from, vert_ind_to
         )
 
-        opt1 = _compute_opt1(power_cross_inv, angles.astype("complex"))
+        opt1 = _compute_opt1(power_cross_inv, orientations.astype("complex"))
     else:
         # Computes W @ G
         power_cross_inv = np.einsum(
             "ijk,kjl->jil", W[:, vert_ind_from, :], G[:, vert_ind_to, :]
         )
 
-        # Computes angles.T @ power_cross_inv @ angles
-        opt1 = power_cross_inv.dot(angles)
-        opt1 = opt1.transpose(0, 2, 1).dot(angles).transpose(0, 2, 1)
-    print(f"the shape of opt1 is {opt1.shape}.")
+        # Computes orientations.T @ power_cross_inv @ orientations
+        opt1 = power_cross_inv.dot(orientations)
+        opt1 = opt1.transpose(0, 2, 1).dot(orientations).transpose(0, 2, 1)
 
     if coh_metric == "absolute":
         opt1 = np.abs(opt1)
     elif coh_metric == "imaginary":
         opt1 = np.imag(opt1)
 
-    # Computes np.diag(angles.T @ power_from_inv @ angles)
-    opt2 = power_from_inv @ angles
-    # opt2 = np.sum(angles * power_from_inv.dot(angles), axis=1)
-    # assert opt2.shape == (len(vert_ind_from), angles.shape[1])
-    # print(f"the shape of opt2 is {opt2.shape}.")
-    # print(f"the shape of opt2_2 is {opt2_2.shape}.")
+    # Computes np.diag(orientations.T @ power_from_inv @ orientations)
+    opt2 = np.sum(orientations * power_from_inv.dot(orientations), axis=1)
 
-    # Computes np.diag(angles.T @ power_to_inv @ angles)
-    opt3 = power_to_inv @ angles
-    # opt3 = np.sum(angles * power_to_inv.dot(angles), axis=1)
-    # assert opt3.shape == (len(vert_ind_to), angles.shape[1])
-    # print(f"the shape of opt3 is {opt3.shape}.")
-    # print(f"the shape of opt3_2 is {opt3_2.shape}.")
+    # Computes np.diag(orientations.T @ power_to_inv @ orientations)
+    opt3 = np.sum(orientations * power_to_inv.dot(orientations), axis=1)
 
     # Compute coherence for each orientation
-    opt = (opt1**2) * (opt2[:, :, np.newaxis] * opt3[:, np.newaxis, :])
-    print(f"the shape of opt is {opt.shape}.")
+    opt = (opt1**2) / (opt2[:, :, np.newaxis] * opt3[:, np.newaxis, :])
 
     # Pick the best orientation as the final coherence value
     return np.real(np.max(opt, axis=(1, 2)))
@@ -1265,24 +1251,15 @@ def dics_connectivity(
     Cm_inv, alpha, _ = reg_pinv(Cm, reg)
     del Cm
 
-    n_sensors, n_verts, _ = G.shape
-
     W = np.dot(G.T, Cm_inv)
-    assert W.shape == (n_orient, n_verts, n_sensors)
 
     # Pre-compute spectral power at each unique vertex
     unique_verts, vertex_map = np.unique(
         np.r_[vertex_from, vertex_to], return_inverse=True
     )
-    # spec_power_inv = np.array(
-    #     [np.dot(W[:, vert, :], G[:, vert, :]) for vert in unique_verts]
-    # )
-    # spec_power_inv[:, 0, 1] = 0
-    # spec_power_inv[:, 1, 0] = 0
-
-    # spec_power_inv = np.einsum("ijk,ijk->ij", W, G)
-    spec_power_inv = (W.T * G).sum(axis=0)  # np.einsum("ijk,ijk->jk", W.T, G)
-    # assert spec_power_inv.shape == (n_verts, n_orient)
+    spec_power_inv = np.array(
+        [np.dot(W[:, vert, :], G[:, vert, :]) for vert in unique_verts]
+    )
 
     # Map vertex indices to unique indices, so the pre-computed spectral power
     # can be retrieved

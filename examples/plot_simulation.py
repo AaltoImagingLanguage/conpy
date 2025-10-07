@@ -249,7 +249,7 @@ brain = s_rms.plot(
     subjects_dir=subjects_dir,
     hemi="both",
     figure=1,
-    # time_viewer=False,
+    time_viewer=False,
     size=400,
     title="MNE-dSPM inverse (RMS)",
 )
@@ -280,7 +280,7 @@ brain = power.plot(
     subjects_dir=subjects_dir,
     hemi="both",
     figure=2,
-    # time_viewer=False,
+    time_viewer=False,
     size=400,
     title=f"DICS power map at {f[0]:.1f} Hz",
 )
@@ -330,7 +330,7 @@ brain = one_to_all.plot(
     hemi="both",
     figure=3,
     size=400,
-    # time_viewer=False,
+    time_viewer=False,
     title="One-to-all coherence",
 )
 
@@ -370,7 +370,7 @@ brain = one_to_all_noise.plot(
     hemi="both",
     figure=4,
     size=400,
-    # time_viewer=False,
+    time_viewer=False,
     title="One-to-all coherence (noise)",
 )
 
@@ -402,7 +402,7 @@ brain = one_to_all_contrast.plot(
     hemi="both",
     figure=5,
     size=400,
-    # time_viewer=False,
+    time_viewer=False,
     title="One-to-all coherence (contrast)",
 )
 
@@ -467,7 +467,7 @@ brain = all_to_all.plot(
     hemi="both",
     figure=6,
     size=400,
-    # time_viewer=False,
+    time_viewer=False,
     clim=dict(kind="value", lims=(0.5, 0.8, 1)),
     title="All-to-all coherence (contrast)",
 )
