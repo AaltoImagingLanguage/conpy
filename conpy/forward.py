@@ -322,11 +322,11 @@ def restrict_src_to_vertices(
             vert_no_lh, vert_no_rh = vertno_or_idx
             if check_vertno:
                 if not (
-                    np.all(np.in1d(vert_no_lh, src[0]["vertno"]))
-                    and np.all(np.in1d(vert_no_rh, src[1]["vertno"]))
+                    np.all(np.isin(vert_no_lh, src[0]["vertno"]))
+                    and np.all(np.isin(vert_no_rh, src[1]["vertno"]))
                 ):
                     raise ValueError(
-                        "One or more vertices were not present in" " SourceSpaces."
+                        "One or more vertices were not present in SourceSpaces."
                     )
 
     else:
@@ -393,7 +393,7 @@ def restrict_forward_to_sensor_range(fwd, dist, picks=None, verbose=None):
     return restrict_forward_to_vertices(fwd, vertno, verbose=verbose)
 
 
-def _make_radial_coord_system(fwd, origin=None, method='geometric'):
+def _make_radial_coord_system(fwd, origin=None, method="geometric"):
     """Compute a radial coordinate system at the given points.
 
     For each point X in a source space, a set of three unit vectors is computed
@@ -410,7 +410,7 @@ def _make_radial_coord_system(fwd, origin=None, method='geometric'):
     fwd : Forward
         The forward solution that contains the lead field information.
     origin : (x, y, z)
-        A tuple (or other array-like) containing the XYZ carthesian coordinates
+        A tuple (or other array-like) containing the XYZ Cartesian coordinates
         of the point of origin. This can for example be the center of a sphere
         fitted through the points.
     method : 'geometric' | 'pca'
@@ -419,6 +419,7 @@ def _make_radial_coord_system(fwd, origin=None, method='geometric'):
         the tangential directions based on the normal to the sphere. Method
         'pca' will compute pseudo-tangential directions along the first two
         lead field principal directions. Defaults to 'pca'.
+
     Returns
     -------
     radial : ndarray, shape (n_points, 3)
@@ -432,7 +433,7 @@ def _make_radial_coord_system(fwd, origin=None, method='geometric'):
         For each point, a unit vector perpendicular to both ``radial`` and
         ``tan1``. This is the third axis of the coordinate system.
     """
-    if method == 'geometric':
+    if method == "geometric":
         # Compute two dipole directions tangential to a sphere that has its origin
         # in the center of the brain.
         points = fwd["source_rr"]
@@ -443,16 +444,12 @@ def _make_radial_coord_system(fwd, origin=None, method='geometric'):
         theta = _cart_to_sph(radial)[:, 1]
 
         # Compute tangential directions
-        tan1 = np.vstack((-np.sin(theta),
-                          np.cos(theta),
-                          np.zeros(len(points)))).T
+        tan1 = np.vstack((-np.sin(theta), np.cos(theta), np.zeros(len(points)))).T
         tan2 = np.cross(radial, tan1)
-    elif method == 'pca':
+    elif method == "pca":
         # Compute two dipole directions along the first two principal directions
         # of the lead field at each vertex.
-        G = fwd["sol"]["data"].reshape(fwd['nchan'],
-                                       fwd['nsource'],
-                                       3)
+        G = fwd["sol"]["data"].reshape(fwd["nchan"], fwd["nsource"], 3)
         G = G.transpose(1, 0, 2)  # (n_sources, n_channels, 3)
         _, _, Vh = np.linalg.svd(G, full_matrices=False)
         tan1 = Vh[:, 0, :]
@@ -515,7 +512,7 @@ def _plot_coord_system(points, dim1, dim2, dim3, scale=0.001, n_ori=3):
     return f
 
 
-def forward_to_tangential(fwd, center=None, method='geometric'):
+def forward_to_tangential(fwd, center=None, method="geometric"):
     """Convert a free orientation forward solution to a tangential one.
 
     Places two source dipoles at each vertex that are oriented either
@@ -529,10 +526,10 @@ def forward_to_tangential(fwd, center=None, method='geometric'):
     fwd : instance of Forward
         The forward solution to convert.
     center : tuple of float (x, y, z) | None
-        The carthesian coordinates of the center of the brain. By default, a
+        The Cartesian coordinates of the center of the brain. By default, a
         sphere is fitted through all the points in the source space. Ignored
         if method='pca'.
-    method : str
+    method : 'geometric' | 'pca'
         Method to compute the tangential directions. Can be either 'geometric'
         or 'pca'. Default is 'geometric'.
 
@@ -548,7 +545,7 @@ def forward_to_tangential(fwd, center=None, method='geometric'):
 
     if fwd["sol"]["ncol"] // n_sources == 2:
         raise ValueError(
-            "Forward solution already seems to be in tangential " "orientation."
+            "Forward solution already seems to be in tangential orientation."
         )
 
     # Make sure the forward solution is in head orientation for this

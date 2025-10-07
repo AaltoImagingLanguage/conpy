@@ -1,0 +1,20 @@
+repos:
+  # Ruff conpy
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.13.1
+    hooks:
+      - id: ruff
+        name: ruff-lint
+        files: ^conpy/
+      - id: ruff-format
+        files: ^conpy|^doc/|^examples/
+
+  # Codespell
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell
+        additional_dependencies:
+          - tomli
+        files: ^conpy/|^doc/|^examples/
+        types_or: [python, bib, rst]
