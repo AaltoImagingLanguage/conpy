@@ -1326,8 +1326,9 @@ def dics_connectivity(
     )
 
 
-def dics_coherence_external(csd, dics, info, fwd, external=None, maximize=False,
-                            n_angles=100, center=None, method='pca'):
+def dics_coherence_external(csd, dics, info, fwd, external=None,
+                            pick_ori='max-coherence', n_angles=100,
+                            center=None, method='pca'):
     """Compute coherence between source level MEG and external signal(s).
 
     Parameters
@@ -1349,32 +1350,40 @@ def dics_coherence_external(csd, dics, info, fwd, external=None, maximize=False,
         also be the string value "all" to pick all channels, or "data" to pick
         data channels. None (default) will pick all channels of type EMG or
         MISC.
-    maximize : bool
-        Whether to maximize the coherence over dipole orientations. If True,
-        the coherence is computed for a range of dipole orientations and the
-        maximum value is taken. If True, the DICS beamformer weights must have
-        been calculated in a free orientation source space with single
-        inversion. Defaults to False.
+    pick_ori : str
+        Specifies the orientation of the source dipoles to use.
+        'max-coherence' (default) corresponds to the orientation that
+        maximizes  coherence with the external signal(s).
+            - 'max-coherence': use the orientation that maximizes
+            coherence. Beamformer weights must have been calculated in a free
+            (vector) source orientation.
+            - 'max-power': use the orientation that maximizes source power.
+            Beamformer weights must have been calculated accordingly.
+            - 'normal': use the source orientation normal to the cortical
+            surface. Beamformer weights must have been calculated accordingly.
+            - 'vector': pool all three source orientations. This will likely
+             dilute the coherence values.
     n_angles : int
-        Number of evenly spaced angles to try when maximizing dipole
-        orientations. Only used if maximize is True. Defaults to 100.
+        Number of evenly spaced angles to search when maximizing coherence.
+        Only used if `pick_ori='max-coherence'`. Defaults to 100.
     center : tuple of float (x, y, z) | None
         The carthesian coordinates of the center of the brain. By default, a
         sphere is fitted through all the points in the source space. Ignored
-        if method='pca'.
-    method : 'geometric' | 'pca'
-        Method to compute the tangential directions. Method 'geometric' will
-        fit a sphere through all the points in the source space and compute
-        the tangential directions based on the normal to the sphere. Method
-        'pca' will compute pseudo-tangential directions along the first two
-        lead field principal directions. Defaults to 'pca'.
+        if `method='pca'`. Only used if `pick_ori='max-coherence'`.
+    method : 'pca' | 'geometric'
+        Method to compute the tangential directions when maximizing coherence.
+        Method 'geometric' will fit a sphere through all the points in the
+        source space and compute the tangential directions based on the
+        normal to the sphere. Method 'pca' will compute pseudo-tangential
+        directions along the first two lead field principal directions.
+        Defaults to 'pca'.
 
     Return
     ------
     stc_coh : SourceEstimate | list of SourceEstimates
-        Coherence between all source vertices and external signal(s). If there are
-        multiple external signals, this will be a list containing the coherence with
-        each external signal.
+        Coherence between all source vertices and external signal(s). If
+        there  are multiple external signals, this will be a list containing
+        the coherence with each external signal.
 
     References
     ----------
@@ -1393,31 +1402,35 @@ def dics_coherence_external(csd, dics, info, fwd, external=None, maximize=False,
     ]
     freqs = csd.frequencies
 
-    if not dics['is_free_ori']:
-        n_orient = 1
-    elif len(dics['source_nn']) // dics['n_sources'] == 2:
-        raise ValueError("Forward solution must be in free orientation. The "
-                         "provided forward solution seems to be in tangential "
-                         "orientation.")
-    elif len(dics['source_nn']) // dics['n_sources'] == 3:
-        n_orient = 3
-    else:
-        raise ValueError("Invalid source_nn in dics beamformer.")
-
-    if maximize:
-        if n_orient != 3:
+    n_orient = dics['weights'].shape[1] // dics['n_sources']
+    if pick_ori in ['max-power', 'normal']:
+        if pick_ori != dics['pick_ori']:
+            raise ValueError(
+                "DICS beamformer weights must be computed using "
+                f"`pick_ori='{pick_ori}'` when `pick_ori='{pick_ori}'`."
+            )
+    elif pick_ori in ['max-coherence', 'vector']:
+        if n_orient == 2:
+            raise ValueError(
+                "Forward solution must be in free orientation. The "
+                "provided forward solution seems to be in tangential "
+                "orientation.")
+        if not dics['is_free_ori']:
             raise ValueError(
                 "DICS beamformer weights must be computed in a free orientation "
-                "source space when using the maximize option."
+                f"source space when `pick_ori='{pick_ori}'`."
             )
         if dics['inversion'] != 'single':
             raise ValueError(
                 "DICS beamformer weights must be computed using single "
-                "inversion when using the maximize option."
+                f"inversion when `pick_ori='{pick_ori}'`."
             )
+    else:
+        raise ValueError("pick_ori must be one of 'max-coherence', 'max-power',"
+                         " 'normal' or 'vector'.")
 
     coherences = np.zeros((len(picks_external), dics["n_sources"], len(freqs)))
-    if not maximize:
+    if pick_ori != 'max-coherence':
         source_power, _ = apply_dics_csd(csd, dics)
     for i in range(0, len(freqs)):
         csd_data = csd.get_data(index=i)
@@ -1432,7 +1445,7 @@ def dics_coherence_external(csd, dics, info, fwd, external=None, maximize=False,
         source_csd = (
             Wk @ whitener @ csd_data[picks_sensors, :][:, picks_external]
         )
-        if maximize:
+        if pick_ori == 'max-coherence':
             # Create an optimization grid
             n_grid = n_angles
             angles = np.arange(n_grid) * np.pi / n_grid
@@ -1470,7 +1483,6 @@ def dics_coherence_external(csd, dics, info, fwd, external=None, maximize=False,
             coherences[:, :, i] = np.max(coherence, axis=1).T
         else:
             source_power_d = source_power.data[:, i]
-            # Gross et al. 2001 formula 9
             source_csd = np.sum(source_csd, axis=1)
 
             # Gross et al. 2001 formula 9
