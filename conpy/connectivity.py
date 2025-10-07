@@ -1359,10 +1359,6 @@ def dics_coherence_external(csd, dics, info, fwd, external=None,
             (vector) source orientation.
             - 'max-power': use the orientation that maximizes source power.
             Beamformer weights must have been calculated accordingly.
-            - 'normal': use the source orientation normal to the cortical
-            surface. Beamformer weights must have been calculated accordingly.
-            - 'vector': pool all three source orientations. This will likely
-             dilute the coherence values.
     n_angles : int
         Number of evenly spaced angles to search when maximizing coherence.
         Only used if `pick_ori='max-coherence'`. Defaults to 100.
@@ -1403,13 +1399,13 @@ def dics_coherence_external(csd, dics, info, fwd, external=None,
     freqs = csd.frequencies
 
     n_orient = dics['weights'].shape[1] // dics['n_sources']
-    if pick_ori in ['max-power', 'normal']:
+    if pick_ori == 'max-power':
         if pick_ori != dics['pick_ori']:
             raise ValueError(
                 "DICS beamformer weights must be computed using "
                 f"`pick_ori='{pick_ori}'` when `pick_ori='{pick_ori}'`."
             )
-    elif pick_ori in ['max-coherence', 'vector']:
+    elif pick_ori == 'max-coherence':
         if n_orient == 2:
             raise ValueError(
                 "Forward solution must be in free orientation. The "
@@ -1426,8 +1422,7 @@ def dics_coherence_external(csd, dics, info, fwd, external=None,
                 f"inversion when `pick_ori='{pick_ori}'`."
             )
     else:
-        raise ValueError("pick_ori must be one of 'max-coherence', 'max-power',"
-                         " 'normal' or 'vector'.")
+        raise ValueError("pick_ori must be one of 'max-coherence', 'max-power'")
 
     coherences = np.zeros((len(picks_external), dics["n_sources"], len(freqs)))
     if pick_ori != 'max-coherence':
