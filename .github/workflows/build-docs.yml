@@ -70,7 +70,7 @@ jobs:
 
       - name: Download example data
         run: |
-          python -c "import mne; mne.datasets.sample.data_path(download=True)"
+          python -c "import mne; mne.datasets.sample.data_path(download=True)"
 
       # Build docs
       - name: make html
