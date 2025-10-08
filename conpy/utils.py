@@ -14,12 +14,7 @@ from mne.source_space._source_space import (
 )
 from mne.utils import get_subjects_dir, warn
 
-try:
-    # MNE-Python 0.18 and up
-    from mne.rank import estimate_rank
-except ImportError:
-    # Older verions of MNE-Python
-    from mne.utils import estimate_rank
+from mne.rank import estimate_rank
 
 
 def _make_diagonal_noise_matrix(csd, reg):
@@ -74,11 +69,11 @@ def _find_indices_1d(haystack, needles, check_needles=True):
     haystack = np.asarray(haystack)
     needles = np.asarray(needles)
     if haystack.ndim != 1 or needles.ndim != 1:
-        raise ValueError("Both the haystack and the needles arrays should be " "1D.")
+        raise ValueError("Both the haystack and the needles arrays should be 1D.")
 
     if check_needles and len(np.setdiff1d(needles, haystack)) > 0:
         raise IndexError(
-            "One or more values where not present in the given " "haystack array."
+            "One or more values where not present in the given haystack array."
         )
 
     sorted_ind = np.argsort(haystack)
@@ -292,7 +287,7 @@ def reg_pinv(x, reg=0, rank="full", rcond=1e-15):
     # Warn the user if both all parameters were kept at their defaults and the
     # matrix is rank deficient.
     if rank_after < len(x) and reg == 0 and rank == "full" and rcond == 1e-15:
-        warn("Covariance matrix is rank-deficient and no regularization is " "done.")
+        warn("Covariance matrix is rank-deficient and no regularization is done.")
     elif isinstance(rank, int) and rank > len(x):
         raise ValueError(
             "Invalid value for the rank parameter (%d) given "

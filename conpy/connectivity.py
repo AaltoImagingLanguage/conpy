@@ -38,7 +38,7 @@ from .utils import reg_pinv
 from .viz import plot_connectivity
 
 
-class BaseConnectivity(object):
+class _BaseConnectivity(object):
     """Base class for connectivity objects.
 
     Contains implementation of methods that are defined for all connectivity
@@ -263,7 +263,7 @@ class BaseConnectivity(object):
             Whether the given connectivity object is compatible with this one.
         """
         return (
-            isinstance(other, BaseConnectivity)
+            isinstance(other, _BaseConnectivity)
             and other.n_sources == self.n_sources
             and np.array_equal(other.pairs, self.pairs)
         )
@@ -367,7 +367,7 @@ def _compute_degree(pairs, n_sources):
     return out_degree, in_degree
 
 
-class VertexConnectivity(BaseConnectivity):
+class VertexConnectivity(_BaseConnectivity):
     """Estimation of connectivity between vertices.
 
     Parameters
@@ -429,7 +429,7 @@ class VertexConnectivity(BaseConnectivity):
         summary : 'sum' | 'degree' | 'absmax'
             How to summarize the adjacency data:
 
-            'sum' : sum the strenghts of both the incoming and outgoing connections
+            'sum' : sum the strengths of both the incoming and outgoing connections
                     for each source.
             'degree': count the number of incoming and outgoing connections for each
                       source.
@@ -726,7 +726,7 @@ class VertexConnectivity(BaseConnectivity):
         )
 
 
-class LabelConnectivity(BaseConnectivity):
+class LabelConnectivity(_BaseConnectivity):
     """Estimation of all-to-all connectivity, parcellated into labels.
 
     Parameters
@@ -1009,7 +1009,7 @@ def one_to_all_connectivity_pairs(src_or_fwd, ref_point, min_dist=0):
     -------
     vert_from : ndarray, shape (n_pairs,)
         For each pair, the index of the first vertex. This is always the index
-        of the refence point.
+        of the reference point.
     vert_to : ndarray, shape (n_pairs,)
         For each pair, the index of the second vertex.
 
@@ -1121,8 +1121,6 @@ def _compute_dics_coherence(
     """
     power_from_inv = spec_power_inv[vert_ind_from]
     power_to_inv = spec_power_inv[vert_ind_to]
-    assert power_from_inv.shape == (len(vert_ind_from), 2, 2)
-    print(power_from_inv.shape)
 
     if numba_enabled:
         power_cross_inv = _compute_power_cross_inv(
@@ -1326,9 +1324,17 @@ def dics_connectivity(
     )
 
 
-def dics_coherence_external(csd, dics, info, fwd, external=None,
-                            pick_ori='max-coherence', n_angles=100,
-                            center=None, method='pca'):
+def dics_coherence_external(
+    csd,
+    dics,
+    info,
+    fwd,
+    external=None,
+    pick_ori="max-coherence",
+    n_angles=100,
+    center=None,
+    method="pca",
+):
     """Compute coherence between source level MEG and external signal(s).
 
     Parameters
@@ -1363,7 +1369,7 @@ def dics_coherence_external(csd, dics, info, fwd, external=None,
         Number of evenly spaced angles to search when maximizing coherence.
         Only used if `pick_ori='max-coherence'`. Defaults to 100.
     center : tuple of float (x, y, z) | None
-        The carthesian coordinates of the center of the brain. By default, a
+        The Cartesian coordinates of the center of the brain. By default, a
         sphere is fitted through all the points in the source space. Ignored
         if `method='pca'`. Only used if `pick_ori='max-coherence'`.
     method : 'pca' | 'geometric'
@@ -1398,25 +1404,26 @@ def dics_coherence_external(csd, dics, info, fwd, external=None,
     ]
     freqs = csd.frequencies
 
-    n_orient = dics['weights'].shape[1] // dics['n_sources']
-    if pick_ori == 'max-power':
-        if pick_ori != dics['pick_ori']:
+    n_orient = dics["weights"].shape[1] // dics["n_sources"]
+    if pick_ori == "max-power":
+        if pick_ori != dics["pick_ori"]:
             raise ValueError(
                 "DICS beamformer weights must be computed using "
                 f"`pick_ori='{pick_ori}'` when `pick_ori='{pick_ori}'`."
             )
-    elif pick_ori == 'max-coherence':
+    elif pick_ori == "max-coherence":
         if n_orient == 2:
             raise ValueError(
                 "Forward solution must be in free orientation. The "
                 "provided forward solution seems to be in tangential "
-                "orientation.")
-        if not dics['is_free_ori']:
+                "orientation."
+            )
+        if not dics["is_free_ori"]:
             raise ValueError(
                 "DICS beamformer weights must be computed in a free orientation "
                 f"source space when `pick_ori='{pick_ori}'`."
             )
-        if dics['inversion'] != 'single':
+        if dics["inversion"] != "single":
             raise ValueError(
                 "DICS beamformer weights must be computed using single "
                 f"inversion when `pick_ori='{pick_ori}'`."
@@ -1425,7 +1432,7 @@ def dics_coherence_external(csd, dics, info, fwd, external=None,
         raise ValueError("pick_ori must be one of 'max-coherence', 'max-power'")
 
     coherences = np.zeros((len(picks_external), dics["n_sources"], len(freqs)))
-    if pick_ori != 'max-coherence':
+    if pick_ori != "max-coherence":
         source_power, _ = apply_dics_csd(csd, dics)
     for i in range(0, len(freqs)):
         csd_data = csd.get_data(index=i)
@@ -1437,10 +1444,8 @@ def dics_coherence_external(csd, dics, info, fwd, external=None,
         n_sensors = W.shape[1]
         Wk = W.reshape(n_sources, n_orient, n_sensors)
         # Gross et al. 2001 formula 6
-        source_csd = (
-            Wk @ whitener @ csd_data[picks_sensors, :][:, picks_external]
-        )
-        if pick_ori == 'max-coherence':
+        source_csd = Wk @ whitener @ csd_data[picks_sensors, :][:, picks_external]
+        if pick_ori == "max-coherence":
             # Create an optimization grid
             n_grid = n_angles
             angles = np.arange(n_grid) * np.pi / n_grid
@@ -1450,8 +1455,9 @@ def dics_coherence_external(csd, dics, info, fwd, external=None,
             fwd_out = convert_forward_solution(fwd, surf_ori=False, copy=True)
 
             # Find tangential directions
-            _, tan1, tan2 = _make_radial_coord_system(fwd_out, origin=center,
-                                                      method=method)
+            _, tan1, tan2 = _make_radial_coord_system(
+                fwd_out, origin=center, method=method
+            )
             tangential_basis = np.stack((tan1, tan2), axis=1)
             orientations = orientations @ tangential_basis
 
@@ -1468,10 +1474,11 @@ def dics_coherence_external(csd, dics, info, fwd, external=None,
             # source_power = (u * s[:, None, :]) @ vh
 
             # Calculate coherence for all sources and orientations
-            num = (np.abs(orientations @ source_csd) ** 2)
-            denom = (np.sum(orientations @ source_power * orientations,
-                            axis=-1)[..., None]
-                     * external_power)
+            num = np.abs(orientations @ source_csd) ** 2
+            denom = (
+                np.sum(orientations @ source_power * orientations, axis=-1)[..., None]
+                * external_power
+            )
             coherence = num / denom
 
             # Take the maximum coherence over orientations
@@ -1499,12 +1506,7 @@ def dics_coherence_external(csd, dics, info, fwd, external=None,
     stcs = list()
     for coh in coherences:
         stcs.append(
-            SourceEstimate(
-                coh,
-                vertices=dics["vertices"],
-                tmin=tmin,
-                tstep=tstep
-            )
+            SourceEstimate(coh, vertices=dics["vertices"], tmin=tmin, tstep=tstep)
         )
     if len(stcs) == 1:
         return stcs[0]

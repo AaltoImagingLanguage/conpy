@@ -11,14 +11,15 @@ Forward models
 ==============
 
 .. autosummary::
-   :toctree: generated/
+    :toctree: functions
+    :template: function.rst
 
-   forward_to_tangential
-   restrict_forward_to_sensor_range
-   restrict_forward_to_vertices
-   restrict_src_to_vertices
-   select_shared_vertices
-   select_vertices_in_sensor_range
+    forward_to_tangential
+    restrict_forward_to_sensor_range
+    restrict_forward_to_vertices
+    restrict_src_to_vertices
+    select_shared_vertices
+    select_vertices_in_sensor_range
 
 
 Connectivity
@@ -29,17 +30,18 @@ Connectivity
 Classes:
 
 .. autosummary::
-   :toctree: generated/
-   :template: class.rst
+    :toctree: functions/
+    :template: class.rst
 
-   LabelConnectivity
-   VertexConnectivity
+    LabelConnectivity
+    VertexConnectivity
 
 
 Functions:
 
 .. autosummary::
-   :toctree: generated/
+    :toctree: functions
+    :template: function.rst
 
     all_to_all_connectivity_pairs
     dics_connectivity
@@ -54,7 +56,8 @@ Statistics
 .. currentmodule:: conpy.stats
 
 .. autosummary::
-   :toctree: generated/
+    :toctree: functions
+    :template: function.rst
 
     cluster_threshold
     group_connectivity_ttest
@@ -67,7 +70,8 @@ Utilities
 .. currentmodule:: conpy.utils
 
 .. autosummary::
-   :toctree: generated/
+    :toctree: functions
+    :template: function.rst
 
    get_morph_src_mapping
    reg_pinv
