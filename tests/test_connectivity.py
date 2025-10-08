@@ -17,7 +17,7 @@ from conpy import (
     restrict_forward_to_vertices,
     dics_coherence_external
 )
-from conpy.connectivity import BaseConnectivity, _get_vert_ind_from_label
+from conpy.connectivity import _BaseConnectivity, _get_vert_ind_from_label
 from mne import BiHemiLabel, Label, SourceEstimate
 from mne.beamformer import make_dics
 from mne.datasets import testing
@@ -149,7 +149,7 @@ def _make_base_connectivity():
     n_sources = 10
     data = np.arange(1, len(pairs[1]) + 1)
 
-    return BaseConnectivity(data, pairs, n_sources)
+    return _BaseConnectivity(data, pairs, n_sources)
 
 
 def _make_alltoall_connectivity():
@@ -194,33 +194,33 @@ def _generate_labels(vertices, n_labels):
 def test_base_connectivity():
     """Test construction of BaseConnectivity."""
     # Pairs and data shape don't match
-    baseCon = BaseConnectivity([0.5, 0.5, 0.5], [[1, 1, 2], [2, 3, 3]], 4)
-    assert_array_equal(baseCon.data, [0.5, 0.5, 0.5])
+    base_con = _BaseConnectivity([0.5, 0.5, 0.5], [[1, 1, 2], [2, 3, 3]], 4)
+    assert_array_equal(base_con.data, [0.5, 0.5, 0.5])
 
     with pytest.raises(ValueError):
-        baseCon = BaseConnectivity([0.5, 0.5, 0.5], [[1, 1], [2, 3]], 3)
+        base_con = _BaseConnectivity([0.5, 0.5, 0.5], [[1, 1], [2, 3]], 3)
 
     # Not enough sources
     with pytest.raises(ValueError):
-        baseCon = BaseConnectivity([0.5, 0.5, 0.5], [[1, 1, 2], [2, 3, 3]], 2)
+        base_con = _BaseConnectivity([0.5, 0.5, 0.5], [[1, 1, 2], [2, 3, 3]], 2)
 
     #  Incorrecly shaped source degree
     with pytest.raises(ValueError):
-        baseCon = BaseConnectivity(
+        base_con = _BaseConnectivity(
             [0.5, 0.5, 0.5],
             [[1, 1, 2], [2, 3, 3]],
             4,
             source_degree=([0, 2, 1], [0, 0, 1]),
         )
 
-    baseCon = _make_base_connectivity()
+    base_con = _make_base_connectivity()
     assert_array_equal(
-        baseCon.source_degree,
+        base_con.source_degree,
         np.array([[0, 2, 2, 1, 0, 0, 0, 0, 0, 0], [0, 0, 1, 2, 2, 0, 0, 0, 0, 0]]),
     )
 
     # Test properties
-    assert baseCon.n_connections == 5
+    assert base_con.n_connections == 5
     state = {
         "data": np.array([1, 1, 1]),
         "pairs": [[2, 2, 3], [3, 4, 4]],
@@ -228,9 +228,9 @@ def test_base_connectivity():
         "subject": None,
         "directed": False,
     }
-    baseCon.__setstate__(state)
-    assert baseCon.n_sources == 5
-    assert_array_equal(baseCon.source_degree[0], [0, 0, 2, 1, 0])
+    base_con.__setstate__(state)
+    assert base_con.n_sources == 5
+    assert_array_equal(base_con.source_degree[0], [0, 0, 2, 1, 0])
 
 
 def test_alltoall_connectivity():
@@ -290,9 +290,9 @@ def test_label_connnectivity():
 
 def test_connectivity_repr():
     """Test string representation of connectivity classes."""
-    baseCon = _make_base_connectivity()
-    assert str(baseCon) == (
-        "<BaseConnectivity  |  n_sources=10, n_conns=5," " subject=None>"
+    base_con = _make_base_connectivity()
+    assert str(base_con) == (
+        "<_BaseConnectivity  |  n_sources=10, n_conns=5," " subject=None>"
     )
 
     all_con = _make_alltoall_connectivity()
@@ -355,58 +355,58 @@ def test_connectivity_save():
 
 def test_adjacency():
     """Test adjacency matrix."""
-    baseCon = _make_base_connectivity()
-    adjmat = baseCon.get_adjacency()
-    assert adjmat.nnz == 2 * baseCon.n_connections
-    assert adjmat.shape == (baseCon.n_sources, baseCon.n_sources)
+    base_con = _make_base_connectivity()
+    adjmat = base_con.get_adjacency()
+    assert adjmat.nnz == 2 * base_con.n_connections
+    assert adjmat.shape == (base_con.n_sources, base_con.n_sources)
 
     # Directed
-    baseCon.directed = True
-    adjmat = baseCon.get_adjacency()
-    assert adjmat.nnz == baseCon.n_connections
-    assert adjmat.shape == (baseCon.n_sources, baseCon.n_sources)
+    base_con.directed = True
+    adjmat = base_con.get_adjacency()
+    assert adjmat.nnz == base_con.n_connections
+    assert adjmat.shape == (base_con.n_sources, base_con.n_sources)
 
 
 def test_connectivity_threshold():
     """Test thresholding function of BaseConnectivity."""
     # Criterion = None
-    baseCon = _make_base_connectivity()
-    threshCon = baseCon.threshold(2, copy=True)
+    base_con = _make_base_connectivity()
+    threshCon = base_con.threshold(2, copy=True)
     assert threshCon.n_connections == 3
-    assert baseCon.n_connections == 5
+    assert base_con.n_connections == 5
     assert_array_equal(threshCon.data, np.array([3, 4, 5]))
 
-    threshCon = baseCon.copy()
+    threshCon = base_con.copy()
     threshCon.threshold(2, direction="below", copy=False)
     assert threshCon.n_connections == 1
     assert_array_equal(threshCon.data, np.array([1]))
 
     # Incorrect direction
     with pytest.raises(ValueError):
-        baseCon.threshold(1, direction="wrong")
+        base_con.threshold(1, direction="wrong")
 
     # Use criterion
     with pytest.raises(ValueError):
-        baseCon.threshold(1, crit=np.array([0, 0, 1, 2]))
+        base_con.threshold(1, crit=np.array([0, 0, 1, 2]))
 
     pval = np.array([0.04, 0.7, 0.001, 0.1, 0.06])
-    threshCon = baseCon.threshold(0.05, crit=pval, copy=True)
+    threshCon = base_con.threshold(0.05, crit=pval, copy=True)
     assert_array_equal(threshCon.data, np.array([2, 4, 5]))
 
 
 def test_compatibility():
     """Test _iscombatible function."""
-    baseCon = _make_base_connectivity()
+    base_con = _make_base_connectivity()
     all_con = _make_alltoall_connectivity()
     label_con = _make_label_connectivity()
 
     # Test BaseConnectivity
-    assert not baseCon.is_compatible(label_con)
-    assert not baseCon.is_compatible(all_con)
-    baseCon2 = BaseConnectivity(
-        np.array([6, 7, 8, 9, 10]), baseCon.pairs, baseCon.n_sources
+    assert not base_con.is_compatible(label_con)
+    assert not base_con.is_compatible(all_con)
+    base_con2 = _BaseConnectivity(
+        np.array([6, 7, 8, 9, 10]), base_con.pairs, base_con.n_sources
     )
-    assert baseCon.is_compatible(baseCon2)
+    assert base_con.is_compatible(base_con2)
 
     # Test VertexConnectivity
     assert not all_con.is_compatible(label_con)
