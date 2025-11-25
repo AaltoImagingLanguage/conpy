@@ -33,6 +33,24 @@ def src():
     )
 
 
+@pytest.fixture
+def vol_src():
+    """Make a volume source space."""
+    path = mne.datasets.sample.data_path()
+    return mne.read_source_spaces(
+        op.join(path, "subjects", "sample", "bem", "volume-7mm-src.fif")
+    )
+
+
+@pytest.fixture
+def vol_fwd():
+    """Make a volume forward solution."""
+    path = mne.datasets.sample.data_path()
+    return mne.read_forward_solution(
+        op.join(path, "MEG", "sample", "sample_audvis-meg-vol-7-fwd.fif")
+    )
+
+
 def _trans():
     path = mne.datasets.sample.data_path()
     return op.join(path, "MEG", "sample", "sample_audvis_raw-trans.fif")
@@ -211,6 +229,23 @@ def test_select_vertices_in_sensor_range(fwd, src):
     verts2 = select_vertices_in_sensor_range(src_r, 0.05, info=info, trans=trans)
     assert_array_equal(verts2[0], np.array([1170, 1609]))
     assert_array_equal(verts2[1], np.array([2159]))
+
+
+def test_select_vertices_in_sensor_range_volume(vol_fwd):
+    """Test selecting vertices in sensor range with volumetric source space."""
+    fwd_r = restrict_forward_to_vertices(vol_fwd, ([1273, 1312], []))
+
+    verts = select_vertices_in_sensor_range(fwd_r, 0.08)
+    assert_array_equal(verts[0], np.array([1273]))
+    assert_array_equal(verts[1], np.array([]))
+    # Test indices
+    verts = select_vertices_in_sensor_range(fwd_r, 0.08, indices=True)
+    assert_array_equal(verts, np.array([0]))
+
+    # Test restricting
+    fwd_rs = restrict_forward_to_sensor_range(fwd_r, 0.08)
+    assert_array_equal(fwd_rs["src"][0]["vertno"], np.array([1273]))
+    assert len(fwd_rs["src"]) == 1  # No second source space
 
 
 # FIXME: disabled until we can make a proper test
