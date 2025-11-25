@@ -338,7 +338,8 @@ def restrict_src_to_vertices(
             if check_vertno:
                 check_tmp = np.all(np.isin(vert_no_lh, src[0]["vertno"]))
                 if is_surf:
-                    check_tmp = check_tmp and np.all(np.isin(vert_no_rh, src[1]["vertno"]))
+                    check_tmp = check_tmp and np.all(np.isin(vert_no_rh,
+                                                             src[1]["vertno"]))
                 if not check_tmp:
                     raise ValueError(
                         "One or more vertices were not present in SourceSpaces."
