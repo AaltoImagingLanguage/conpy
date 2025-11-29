@@ -35,7 +35,7 @@ def src():
 
 @pytest.fixture
 def vol_src():
-    """Make a volume source space."""
+    """Load a volume source space."""
     path = mne.datasets.sample.data_path()
     return mne.read_source_spaces(
         op.join(path, "subjects", "sample", "bem", "volume-7mm-src.fif")
