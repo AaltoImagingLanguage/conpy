@@ -347,7 +347,7 @@ def restrict_src_to_vertices(
         # Ensure vertices are in sequential order
         verts = np.sort(verts)
 
-        # Restrict the source spaceççç
+        # Restrict the source space
         hemi["vertno"] = verts
         hemi["nuse"] = len(verts)
         hemi["inuse"] = hemi["inuse"].copy()
