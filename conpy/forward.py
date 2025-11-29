@@ -150,8 +150,7 @@ def select_vertices_in_sensor_range(
     if indices:
         return np.flatnonzero(src_sel)
     else:
-        n_verts = [0] + [s["nuse"] for s in src]
-        n_verts = np.cumsum(n_verts)
+        n_verts = np.cumsum([0] + [s["nuse"] for s in src])
         sel = [src_sel[n_verts[i]:n_verts[i+1]] for i in range(n_src)]
         verts = [src[i]["vertno"][sel[i]] for i in range(n_src)]
         return verts
@@ -212,10 +211,10 @@ def restrict_forward_to_vertices(
         # Make sure the vertices are in sequential order
         fwd_idx = np.sort(vertno_or_idx)
 
-        hemi_n_vert = [0] + n_hemi_vertno
+        hemi_vert_idx = np.cumsum([0] + n_hemi_vertno)
         sel_hemi_idx = [
-            vertno_or_idx[(fwd_idx >= hemi_n_vert[i])
-            & (fwd_idx < np.cumsum(hemi_n_vert)[i+1])] - np.cumsum(hemi_n_vert)[i]
+            vertno_or_idx[(fwd_idx >= hemi_vert_idx[i])
+            & (fwd_idx < hemi_vert_idx[i+1])] - hemi_vert_idx[i]
             for i in range(n_src)]
         sel_hemi_vertno = [vertno[sel] for vertno, sel in zip(hemi_vertno,
                                                               sel_hemi_idx)]
@@ -317,11 +316,11 @@ def restrict_src_to_vertices(
         if isinstance(vertno_or_idx[0], int):
             logger.info("Interpreting given vertno_or_idx as vertex indices.")
             vertno_or_idx = np.asarray(vertno_or_idx)
-            n_vert = [0] + [s["nuse"] for s in src]
+            n_vert = np.cumsum([0] + [s["nuse"] for s in src])
             ind = [
                 vertno_or_idx[
                     (vertno_or_idx >= n_vert[i]) &
-                    (vertno_or_idx < np.cumsum(n_vert)[i+1])] -
+                    (vertno_or_idx < n_vert[i+1])] -
                 n_vert[i] for i in range(n_src)
             ]
             vertno = [s["vertno"][inds] for s, inds in zip(src, ind)]
