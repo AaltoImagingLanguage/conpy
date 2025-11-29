@@ -234,6 +234,7 @@ def test_select_vertices_in_sensor_range(fwd, src):
 def test_select_vertices_in_sensor_range_volume(vol_fwd):
     """Test selecting vertices in sensor range with volumetric source space."""
     fwd_r = restrict_forward_to_vertices(vol_fwd, ([1273, 1312], []))
+    assert_array_equal(fwd_r["src"][0]["vertno"], np.array([1273, 1312]))
 
     verts = select_vertices_in_sensor_range(fwd_r, 0.08)
     assert_array_equal(verts[0], np.array([1273]))
