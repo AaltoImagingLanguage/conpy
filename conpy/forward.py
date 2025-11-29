@@ -212,11 +212,13 @@ def restrict_forward_to_vertices(
         # Make sure the vertices are in sequential order
         fwd_idx = np.sort(vertno_or_idx)
 
-        hemi_n_vert = [0] + [len(vertno) for vertno in hemi_vertno]
+        hemi_n_vert = [0] + n_hemi_vertno
         sel_hemi_idx = [
-            vertno_or_idx[(fwd_idx > hemi_n_vert[i]) & (fwd_idx < hemi_n_vert[i+1])]
+            vertno_or_idx[(fwd_idx >= hemi_n_vert[i])
+            & (fwd_idx < np.cumsum(hemi_n_vert)[i+1])] - np.cumsum(hemi_n_vert)[i]
             for i in range(n_src)]
-        sel_hemi_vertno = [hemi_vertno[sel] for sel in sel_hemi_idx]
+        sel_hemi_vertno = [vertno[sel] for vertno, sel in zip(hemi_vertno,
+                                                              sel_hemi_idx)]
     else:
         logger.info("Interpreting given vertno_or_idx as vertex numbers.")
 
@@ -318,7 +320,8 @@ def restrict_src_to_vertices(
             n_vert = [0] + [s["nuse"] for s in src]
             ind = [
                 vertno_or_idx[
-                    (vertno_or_idx >= n_vert[i]) & (vertno_or_idx < n_vert[i+1])] -
+                    (vertno_or_idx >= n_vert[i]) &
+                    (vertno_or_idx < np.cumsum(n_vert)[i+1])] -
                 n_vert[i] for i in range(n_src)
             ]
             vertno = [s["vertno"][inds] for s, inds in zip(src, ind)]
