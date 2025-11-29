@@ -202,8 +202,8 @@ def restrict_forward_to_vertices(
         fwd_out = fwd
 
     n_src = len(fwd["src"])
-    hemi_vertno = [s["vertno"] for s in fwd["src"]]
-    n_hemi_vertno = [len(vertno) for vertno in hemi_vertno]
+    vertno = [s["vertno"] for s in fwd["src"]]
+    n_vertno = [len(hemi_vertno) for hemi_vertno in vertno]
     if isinstance(vertno_or_idx[0], int):
         logger.info("Interpreting given vertno_or_idx as vertex indices.")
         vertno_or_idx = np.asarray(vertno_or_idx)
@@ -211,28 +211,28 @@ def restrict_forward_to_vertices(
         # Make sure the vertices are in sequential order
         fwd_idx = np.sort(vertno_or_idx)
 
-        hemi_vert_idx = np.cumsum([0] + n_hemi_vertno)
-        sel_hemi_idx = [
-            vertno_or_idx[(fwd_idx >= hemi_vert_idx[i])
-            & (fwd_idx < hemi_vert_idx[i+1])] - hemi_vert_idx[i]
+        vert_idx = np.cumsum([0] + n_vertno)
+        sel_idx = [
+            vertno_or_idx[(fwd_idx >= vert_idx[i])
+            & (fwd_idx < vert_idx[i+1])] - vert_idx[i]
             for i in range(n_src)]
-        sel_hemi_vertno = [vertno[sel] for vertno, sel in zip(hemi_vertno,
-                                                              sel_hemi_idx)]
+        sel_vertno = [hemi_vertno[sel] for hemi_vertno, sel in zip(vertno, sel_idx)]
     else:
         logger.info("Interpreting given vertno_or_idx as vertex numbers.")
 
         # Make sure vertno_or_idx is sorted
         vertno_or_idx = [np.sort(v) for v in vertno_or_idx]
-        sel_hemi_vertno = vertno_or_idx
+        sel_vertno = vertno_or_idx
 
-        src_hemi_idx = [_find_indices_1d(vertno, sel, check_vertno) + sum(
-            n_hemi_vertno[:i]) for i, (vertno, sel) in enumerate(zip(hemi_vertno,
-                                                                     sel_hemi_vertno))]
-        fwd_idx = np.hstack(src_hemi_idx)
+        src_idx = [
+            _find_indices_1d(hemi_vertno, sel, check_vertno) + sum(n_vertno[:i])
+            for i, (hemi_vertno, sel) in enumerate(zip(vertno, sel_vertno))
+        ]
+        fwd_idx = np.hstack(src_idx)
 
     logger.info(
         "Restricting forward solution to %d out of %d vertices."
-        % (len(fwd_idx), sum(n_hemi_vertno))
+        % (len(fwd_idx), sum(n_vertno))
     )
 
     n_orient = fwd["sol"]["ncol"] // fwd["nsource"]
@@ -264,7 +264,7 @@ def restrict_forward_to_vertices(
     # Restrict the SourceSpaces inside the forward operator
     fwd_out["src"] = restrict_src_to_vertices(
         fwd_out["src"],
-        sel_hemi_vertno,
+        sel_vertno,
         check_vertno=False,
         verbose=False,
     )
@@ -316,12 +316,11 @@ def restrict_src_to_vertices(
         if isinstance(vertno_or_idx[0], int):
             logger.info("Interpreting given vertno_or_idx as vertex indices.")
             vertno_or_idx = np.asarray(vertno_or_idx)
-            n_vert = np.cumsum([0] + [s["nuse"] for s in src])
+            vert_idx = np.cumsum([0] + [s["nuse"] for s in src])
             ind = [
                 vertno_or_idx[
-                    (vertno_or_idx >= n_vert[i]) &
-                    (vertno_or_idx < n_vert[i+1])] -
-                n_vert[i] for i in range(n_src)
+                    (vertno_or_idx >= vert_idx[i]) & (vertno_or_idx < vert_idx[i+1])
+                ] - vert_idx[i] for i in range(n_src)
             ]
             vertno = [s["vertno"][inds] for s, inds in zip(src, ind)]
         else:
