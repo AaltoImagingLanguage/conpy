@@ -84,7 +84,7 @@ def select_vertices_in_sensor_range(
                 "You need to specify an Info object with "
                 "information about the channels."
             )
-    is_surf = src.kind == 'surface'
+    n_src = len(src)
 
     # Load the head<->MRI transform if necessary
     if src[0]["coord_frame"] == FIFF.FIFFV_COORD_MRI:
@@ -150,15 +150,11 @@ def select_vertices_in_sensor_range(
     if indices:
         return np.flatnonzero(src_sel)
     else:
-        n_lh_verts = src[0]["nuse"]
-        lh_sel = src_sel[:n_lh_verts]
-        vert_lh = src[0]["vertno"][lh_sel]
-        if is_surf:
-            rh_sel = src_sel[n_lh_verts:]
-            vert_rh = src[1]["vertno"][rh_sel]
-        else:
-            vert_rh = []
-        return [vert_lh, vert_rh]
+        n_verts = [0] + [s["nuse"] for s in src]
+        n_verts = np.cumsum(n_verts)
+        sel = [src_sel[n_verts[i]:n_verts[i+1]] for i in range(n_src)]
+        verts = [src[i]["vertno"][sel[i]] for i in range(n_src)]
+        return verts
 
 
 @verbose
@@ -206,11 +202,9 @@ def restrict_forward_to_vertices(
     else:
         fwd_out = fwd
 
-    is_surf = fwd["src"].kind == 'surface'
-    lh_vertno = fwd["src"][0]["vertno"]
-    if is_surf:
-        rh_vertno = fwd["src"][1]["vertno"]
-
+    n_src = len(fwd["src"])
+    hemi_vertno = [s["vertno"] for s in fwd["src"]]
+    n_hemi_vertno = [len(vertno) for vertno in hemi_vertno]
     if isinstance(vertno_or_idx[0], int):
         logger.info("Interpreting given vertno_or_idx as vertex indices.")
         vertno_or_idx = np.asarray(vertno_or_idx)
@@ -218,28 +212,26 @@ def restrict_forward_to_vertices(
         # Make sure the vertices are in sequential order
         fwd_idx = np.sort(vertno_or_idx)
 
-        n_vert_lh = len(lh_vertno)
-        sel_lh_idx = vertno_or_idx[fwd_idx < n_vert_lh]
-        sel_lh_vertno = lh_vertno[sel_lh_idx]
-        if is_surf:
-            sel_rh_idx = vertno_or_idx[fwd_idx >= n_vert_lh] - n_vert_lh
-            sel_rh_vertno = rh_vertno[sel_rh_idx]
+        hemi_n_vert = [0] + [len(vertno) for vertno in hemi_vertno]
+        sel_hemi_idx = [
+            vertno_or_idx[(fwd_idx > hemi_n_vert[i]) & (fwd_idx < hemi_n_vert[i+1])]
+            for i in range(n_src)]
+        sel_hemi_vertno = [hemi_vertno[sel] for sel in sel_hemi_idx]
     else:
         logger.info("Interpreting given vertno_or_idx as vertex numbers.")
 
         # Make sure vertno_or_idx is sorted
         vertno_or_idx = [np.sort(v) for v in vertno_or_idx]
+        sel_hemi_vertno = vertno_or_idx
 
-        sel_lh_vertno, sel_rh_vertno = vertno_or_idx
-        src_lh_idx = _find_indices_1d(lh_vertno, sel_lh_vertno, check_vertno)
-        fwd_idx = src_lh_idx
-        if is_surf:
-            src_rh_idx = _find_indices_1d(rh_vertno, sel_rh_vertno, check_vertno)
-            fwd_idx = np.hstack((src_lh_idx, src_rh_idx + len(lh_vertno)))
+        src_hemi_idx = [_find_indices_1d(vertno, sel, check_vertno) + sum(
+            n_hemi_vertno[:i]) for i, (vertno, sel) in enumerate(zip(hemi_vertno,
+                                                                     sel_hemi_vertno))]
+        fwd_idx = np.hstack(src_hemi_idx)
 
     logger.info(
         "Restricting forward solution to %d out of %d vertices."
-        % (len(fwd_idx), len(lh_vertno) + len(rh_vertno) if is_surf else len(lh_vertno))
+        % (len(fwd_idx), sum(n_hemi_vertno))
     )
 
     n_orient = fwd["sol"]["ncol"] // fwd["nsource"]
@@ -271,7 +263,7 @@ def restrict_forward_to_vertices(
     # Restrict the SourceSpaces inside the forward operator
     fwd_out["src"] = restrict_src_to_vertices(
         fwd_out["src"],
-        [sel_lh_vertno, sel_rh_vertno] if is_surf else [sel_lh_vertno, []],
+        sel_hemi_vertno,
         check_vertno=False,
         verbose=False,
     )
@@ -318,46 +310,40 @@ def restrict_src_to_vertices(
     else:
         src_out = src
 
-    is_surf = src.kind == "surface"
-
+    n_src = len(src)
     if vertno_or_idx:
         if isinstance(vertno_or_idx[0], int):
             logger.info("Interpreting given vertno_or_idx as vertex indices.")
             vertno_or_idx = np.asarray(vertno_or_idx)
-            n_vert_lh = src[0]["nuse"]
-            ind_lh = vertno_or_idx[vertno_or_idx < n_vert_lh]
-            vert_no_lh = src[0]["vertno"][ind_lh]
-            if is_surf:
-                ind_rh = vertno_or_idx[vertno_or_idx >= n_vert_lh] - n_vert_lh
-                vert_no_rh = src[1]["vertno"][ind_rh]
+            n_vert = [0] + [s["nuse"] for s in src]
+            ind = [
+                vertno_or_idx[
+                    (vertno_or_idx >= n_vert[i]) & (vertno_or_idx < n_vert[i+1])] -
+                n_vert[i] for i in range(n_src)
+            ]
+            vertno = [s["vertno"][inds] for s, inds in zip(src, ind)]
         else:
             logger.info("Interpreting given vertno_or_idx as vertex numbers.")
-            vert_no_lh = vertno_or_idx[0]
-            if is_surf:
-                vert_no_rh = vertno_or_idx[1]
+            vertno = vertno_or_idx
             if check_vertno:
-                check_tmp = np.all(np.isin(vert_no_lh, src[0]["vertno"]))
-                if is_surf:
-                    check_tmp = check_tmp and np.all(np.isin(vert_no_rh,
-                                                             src[1]["vertno"]))
-                if not check_tmp:
-                    raise ValueError(
-                        "One or more vertices were not present in SourceSpaces."
-                    )
+                for s, verts in zip(src, vertno):
+                    if not np.all(np.isin(verts, s["vertno"])):
+                        raise ValueError(
+                            "One or more vertices were not present in SourceSpaces."
+                        )
 
     else:
         # Empty list
-        vert_no_lh, vert_no_rh = [], []
+        vertno = [[] for i in range(n_src)]
 
-    nuse = src[0]["nuse"] + src[1]["nuse"] if is_surf else src[0]["nuse"]
-    n_vertno = len(vert_no_lh) + len(vert_no_rh) if is_surf else len(vert_no_lh)
+    nuse = sum([s["nuse"] for s in src])
+    n_vertno = sum([len(verts) for verts in vertno])
     logger.info(
         "Restricting source space to %d out of %d vertices."
         % (n_vertno, nuse)
     )
 
-    vertnos = (vert_no_lh, vert_no_rh) if is_surf else [vert_no_lh]
-    for hemi, verts in zip(src_out, vertnos):
+    for hemi, verts in zip(src_out, vertno):
         # Ensure vertices are in sequential order
         verts = np.sort(verts)
 
