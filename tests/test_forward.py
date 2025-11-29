@@ -44,7 +44,7 @@ def vol_src():
 
 @pytest.fixture
 def vol_fwd():
-    """Make a volume forward solution."""
+    """Load a volume forward solution."""
     path = mne.datasets.sample.data_path()
     return mne.read_forward_solution(
         op.join(path, "MEG", "sample", "sample_audvis-meg-vol-7-fwd.fif")
