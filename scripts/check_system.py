@@ -3,27 +3,38 @@ This script performs a series of checks on the system to see if everything is
 ready to run the analysis pipeline.
 """
 
+import importlib
 import os
+import re
 import warnings
-import pkg_resources
 
 # Check to see if the python dependencies are fullfilled.
 dependencies = []
 with open("../requirements.txt") as f:
     for line in f:
         line = line.strip()
-        if len(line) == 0 or line.startswith("#"):
-            continue
-        dependencies.append(line)
+        if matches := re.match(r"^[a-z0-9\-_]+", line):
+            dependencies.append(matches.group(0))
 
 # This raises errors of dependencies are not met
-pkg_resources.working_set.require(dependencies)
+missing_deps = list()
+print("Dependecies")
+for dep in dependencies:
+    if importlib.util.find_spec(dep.replace("-", "_")) is None:
+        print("├☒ ", dep)
+        missing_deps.append(dep)
+    else:
+        print("├☑ ", dep)
+if len(missing_deps) > 0:
+    raise ValueError(
+        f"Not all packages in requirements.txt are installed. Missing: {missing_deps}."
+    )
 
 try:
     import mne
-    from distutils.version import LooseVersion
+    from packaging.version import Version
 
-    assert LooseVersion(mne.__version__) >= LooseVersion("0.16")
+    assert Version(mne.__version__) >= Version("1.0")
 except:
     raise ValueError(
         "your mne version is too old. Version %s is current installed, while version >= 0.16 is required. Please run `pip install --update mne` to install the lastest version."
