@@ -1047,8 +1047,9 @@ try:
     @nb.jit(nb.complex128[:, :, :](nb.complex128[:, :, :], nb.complex128[:, :]))
     def _compute_opt1(x, y):
         r = np.zeros((x.shape[0], y.shape[1], y.shape[1]), dtype=nb.complex128)
+        yT = np.ascontinuousarray(y.T)
         for i in range(len(x)):
-            r[i, :, :] = np.dot(np.dot(y.T, x[i, :, :]), y)
+            r[i, :, :] = np.dot(np.dot(yT, x[i, :, :]), y)
         return r
 
     @nb.jit(
