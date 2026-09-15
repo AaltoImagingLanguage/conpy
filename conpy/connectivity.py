@@ -15,6 +15,8 @@ from mne import (
     Forward,
     Label,
     SourceEstimate,
+    VolSourceEstimate,
+    MixedSourceEstimate,
     SourceSpaces,
     pick_channels_forward,
 )
@@ -1505,9 +1507,19 @@ def dics_coherence_external(
 
     stcs = list()
     for coh in coherences:
-        stcs.append(
-            SourceEstimate(coh, vertices=dics["vertices"], tmin=tmin, tstep=tstep)
-        )
+        if fwd["src"].kind == "surface":
+            stcs.append(
+                SourceEstimate(coh, vertices=dics["vertices"], tmin=tmin, tstep=tstep)
+            )
+        elif fwd["src"].kind == "volume":
+            stcs.append(
+                VolSourceEstimate(coh, vertices=dics["vertices"], tmin=tmin, tstep=tstep)
+            )
+        elif fwd["src"].kind == "mixed":
+            stcs.append(
+                MixedSourceEstimate(coh, vertices=dics["vertices"], tmin=tmin, tstep=tstep)
+            )
+
     if len(stcs) == 1:
         return stcs[0]
     else:
