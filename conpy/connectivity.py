@@ -1513,7 +1513,9 @@ def dics_coherence_external(
             )
         elif fwd["src"].kind == "volume":
             stcs.append(
-                VolSourceEstimate(coh, vertices=dics["vertices"], tmin=tmin, tstep=tstep)
+                VolSourceEstimate(
+                    coh, vertices=dics["vertices"], tmin=tmin, tstep=tstep
+                )
             )
         elif fwd["src"].kind == "mixed":
             stcs.append(
