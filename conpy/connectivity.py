@@ -1519,7 +1519,9 @@ def dics_coherence_external(
             )
         elif fwd["src"].kind == "mixed":
             stcs.append(
-                MixedSourceEstimate(coh, vertices=dics["vertices"], tmin=tmin, tstep=tstep)
+                MixedSourceEstimate(
+                    coh, vertices=dics["vertices"], tmin=tmin, tstep=tstep
+                )
             )
 
     if len(stcs) == 1:

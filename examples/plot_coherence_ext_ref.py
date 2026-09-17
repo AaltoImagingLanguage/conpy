@@ -279,10 +279,12 @@ mne.viz.plot_topomap(coh[:-1, -1], info_grads)
 #  2. Project the gradiometer CSD to the cortical surface to compute the
 #     denominator of the equation.
 #
-dics = make_dics(epochs.info, fwd, csd_signal, reg=1, depth=1, pick_ori=None,
-                 inversion='single')
-stc_coh = dics_coherence_external(csd_signal, dics, info, fwd,
-                                  external="external", pick_ori='max-coherence')
+dics = make_dics(
+    epochs.info, fwd, csd_signal, reg=1, depth=1, pick_ori=None, inversion="single"
+)
+stc_coh = dics_coherence_external(
+    csd_signal, dics, info, fwd, external="external", pick_ori="max-coherence"
+)
 brain = stc_coh.plot("sample", subjects_dir=subjects_dir, hemi="both")
 
 # Indicate the true location of the source activity on the plot.

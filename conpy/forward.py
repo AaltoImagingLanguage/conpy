@@ -151,7 +151,7 @@ def select_vertices_in_sensor_range(
         return np.flatnonzero(src_sel)
     else:
         n_verts = np.cumsum([0] + [s["nuse"] for s in src])
-        sel = [src_sel[n_verts[i]:n_verts[i+1]] for i in range(n_src)]
+        sel = [src_sel[n_verts[i] : n_verts[i + 1]] for i in range(n_src)]
         verts = [src[i]["vertno"][sel[i]] for i in range(n_src)]
         return verts
 
@@ -213,9 +213,10 @@ def restrict_forward_to_vertices(
 
         vert_idx = np.cumsum([0] + n_vertno)
         sel_idx = [
-            vertno_or_idx[(fwd_idx >= vert_idx[i])
-            & (fwd_idx < vert_idx[i+1])] - vert_idx[i]
-            for i in range(n_src)]
+            vertno_or_idx[(fwd_idx >= vert_idx[i]) & (fwd_idx < vert_idx[i + 1])]
+            - vert_idx[i]
+            for i in range(n_src)
+        ]
         sel_vertno = [hemi_vertno[sel] for hemi_vertno, sel in zip(vertno, sel_idx)]
     else:
         logger.info("Interpreting given vertno_or_idx as vertex numbers.")
@@ -319,8 +320,10 @@ def restrict_src_to_vertices(
             vert_idx = np.cumsum([0] + [s["nuse"] for s in src])
             ind = [
                 vertno_or_idx[
-                    (vertno_or_idx >= vert_idx[i]) & (vertno_or_idx < vert_idx[i+1])
-                ] - vert_idx[i] for i in range(n_src)
+                    (vertno_or_idx >= vert_idx[i]) & (vertno_or_idx < vert_idx[i + 1])
+                ]
+                - vert_idx[i]
+                for i in range(n_src)
             ]
             vertno = [s["vertno"][inds] for s, inds in zip(src, ind)]
         else:
@@ -339,10 +342,7 @@ def restrict_src_to_vertices(
 
     nuse = sum([s["nuse"] for s in src])
     n_vertno = sum([len(verts) for verts in vertno])
-    logger.info(
-        "Restricting source space to %d out of %d vertices."
-        % (n_vertno, nuse)
-    )
+    logger.info("Restricting source space to %d out of %d vertices." % (n_vertno, nuse))
 
     for hemi, verts in zip(src_out, vertno):
         # Ensure vertices are in sequential order
