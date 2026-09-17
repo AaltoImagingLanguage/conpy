@@ -15,6 +15,8 @@ from mne import (
     Forward,
     Label,
     SourceEstimate,
+    VolSourceEstimate,
+    MixedSourceEstimate,
     SourceSpaces,
     pick_channels_forward,
 )
@@ -789,7 +791,6 @@ class LabelConnectivity(_BaseConnectivity):
         fontsize_names=8,
         fontsize_colorbar=8,
         padding=6.0,
-        fig=None,
         subplot=111,
         interactive=True,
         node_linewidth=2.0,
@@ -816,7 +817,6 @@ class LabelConnectivity(_BaseConnectivity):
             fontsize_names=fontsize_names,
             fontsize_colorbar=fontsize_colorbar,
             padding=padding,
-            fig=fig,
             subplot=subplot,
             interactive=interactive,
             node_linewidth=node_linewidth,
@@ -1505,9 +1505,23 @@ def dics_coherence_external(
 
     stcs = list()
     for coh in coherences:
-        stcs.append(
-            SourceEstimate(coh, vertices=dics["vertices"], tmin=tmin, tstep=tstep)
-        )
+        if fwd["src"].kind == "surface":
+            stcs.append(
+                SourceEstimate(coh, vertices=dics["vertices"], tmin=tmin, tstep=tstep)
+            )
+        elif fwd["src"].kind == "volume":
+            stcs.append(
+                VolSourceEstimate(
+                    coh, vertices=dics["vertices"], tmin=tmin, tstep=tstep
+                )
+            )
+        elif fwd["src"].kind == "mixed":
+            stcs.append(
+                MixedSourceEstimate(
+                    coh, vertices=dics["vertices"], tmin=tmin, tstep=tstep
+                )
+            )
+
     if len(stcs) == 1:
         return stcs[0]
     else:

@@ -45,6 +45,7 @@ addopts = """
     --ignore=doc --ignore=examples --ignore=tutorials --cov=conpy
 """
 junit_family = "xunit2"
+testpaths = ["tests"]
 
 [tool.ruff]
 exclude = ["__init__.py"]

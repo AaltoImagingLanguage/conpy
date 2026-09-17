@@ -18,7 +18,13 @@ from conpy import (
     dics_coherence_external
 )
 from conpy.connectivity import _BaseConnectivity, _get_vert_ind_from_label
-from mne import BiHemiLabel, Label, SourceEstimate
+from mne import (
+    BiHemiLabel,
+    Label,
+    SourceEstimate,
+    VolSourceEstimate,
+    MixedSourceEstimate
+)
 from mne.beamformer import make_dics
 from mne.datasets import testing
 from mne.time_frequency import csd_morlet
@@ -746,3 +752,70 @@ def test_dics_coherence_external():
     assert isinstance(coh_stc, SourceEstimate)
     assert coh_stc.data.shape == (fwd['nsource'], 2)  # 2 frequencies
     assert np.max(coh_stc.data) <= 1 and np.min(coh_stc.data) >= 0
+
+    # Volumetric source space
+    vol_fwd = mne.read_forward_solution(
+        op.join(
+            data_path,
+            "MEG",
+            "sample",
+            "sample_audvis_trunc-meg-vol-7-fwd.fif",
+        )
+    )
+    vol_fwd = mne.pick_types_forward(vol_fwd, meg="grad", eeg=False)
+
+    vol_dics = make_dics(
+        info.copy(),
+        vol_fwd,
+        csd.copy(),
+        reg=1,
+        inversion="single",
+        pick_ori="max-power",
+    )
+    vol_coh_stc = dics_coherence_external(
+        csd,
+        vol_dics,
+        info,
+        vol_fwd,
+        external="external",
+        pick_ori="max-power",
+    )
+    assert isinstance(vol_coh_stc, VolSourceEstimate)
+    assert vol_coh_stc.data.shape == (vol_fwd["nsource"], 2)
+    assert np.max(vol_coh_stc.data) <= 1 and np.min(vol_coh_stc.data) >= 0
+
+    # Mixed source space
+    mixed_fwd = fwd.copy()
+    mixed_fwd["src"] = fwd["src"] + vol_fwd["src"]
+    mixed_fwd["nsource"] = fwd["nsource"] + vol_fwd["nsource"]
+    mixed_fwd["source_rr"] = np.concatenate(
+        (fwd["source_rr"], vol_fwd["source_rr"])
+    )
+    mixed_fwd["source_nn"] = np.concatenate(
+        (fwd["source_nn"], vol_fwd["source_nn"])
+    )
+    mixed_fwd["sol"]["data"] = np.concatenate(
+        (fwd["sol"]["data"], vol_fwd["sol"]["data"]),
+        axis=1,
+    )
+    mixed_fwd["sol"]["ncol"] = mixed_fwd["sol"]["data"].shape[1]
+
+    mixed_dics = make_dics(
+        info.copy(),
+        mixed_fwd,
+        csd.copy(),
+        reg=1,
+        inversion="single",
+        pick_ori="max-power",
+    )
+    mixed_coh_stc = dics_coherence_external(
+        csd,
+        mixed_dics,
+        info,
+        mixed_fwd,
+        external="external",
+        pick_ori="max-power",
+    )
+    assert isinstance(mixed_coh_stc, MixedSourceEstimate)
+    assert mixed_coh_stc.data.shape == (mixed_fwd["nsource"], 2)
+    assert np.max(mixed_coh_stc.data) <= 1 and np.min(mixed_coh_stc.data) >= 0
